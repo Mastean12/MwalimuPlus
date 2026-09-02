@@ -26,8 +26,8 @@ $pageActions  = $pageActions  ?? '';
 
 $navItems = [
     'dashboard' => ['label' => 'Dashboard',      'href' => 'dashboard.php',          'icon' => '🏠'],
-    'subjects'  => ['label' => 'Subjects',        'href' => 'dashboard.php#subjects', 'icon' => '📚'],
-    'lessons'   => ['label' => 'Recent lessons',  'href' => 'dashboard.php#recent',   'icon' => '📝'],
+    'subjects'  => ['label' => 'Subjects',        'href' => 'subjects.php',           'icon' => '📚'],
+    'lessons'   => ['label' => 'Lessons',         'href' => 'lessons.php',            'icon' => '📝'],
     'schemes'   => ['label' => 'Schemes of work', 'href' => 'schemes.php',            'icon' => '🗓️'],
 ];
 ?>

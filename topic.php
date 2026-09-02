@@ -42,7 +42,7 @@ $pageIcon     = '📝';
 $pageHeading  = $topic['name'];
 $pageSubtitle = 'Strand: ' . $topic['strand'];
 $breadcrumbs  = [
-    ['label' => 'Subjects', 'href' => 'dashboard.php#subjects'],
+    ['label' => 'Subjects', 'href' => 'subjects.php'],
     ['label' => $topic['subject_name'], 'href' => 'subject.php?id=' . (int) $topic['subject_id']],
     ['label' => $topic['name']],
 ];

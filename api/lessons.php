@@ -2,6 +2,9 @@
 /** JSON API: list and fetch generated lessons.
  *  GET /api/lessons.php            -> list (optional ?topic_id=)
  *  GET /api/lessons.php?id=1       -> one lesson with full payload
+ *  GET /api/lessons.php?subject_id=&status=&q=&page=&per_page=
+ *                                   -> filtered, paginated list:
+ *                                      { success, lessons, page, per_page, total, total_pages }
  *  POST /api/lessons.php           -> delete { "id": 1 } (destructive; kept minimal)
  */
 
@@ -59,17 +62,58 @@ try {
                   ORDER BY created_at DESC'
             );
             $stmt->execute([$topicId, $userId]);
-        } else {
-            $stmt = $pdo->prepare(
-                'SELECT id, subject_id, topic_id, title, status, duration_minutes, created_at
-                   FROM lessons
-                  WHERE user_id = ?
-                  ORDER BY created_at DESC'
-            );
-            $stmt->execute([$userId]);
+            echo json_encode(['success' => true, 'lessons' => $stmt->fetchAll()]);
+            exit;
         }
 
-        echo json_encode(['success' => true, 'lessons' => $stmt->fetchAll()]);
+        // Filtered, paginated list — same filters as lessons.php.
+        $subjectId = filter_input(INPUT_GET, 'subject_id', FILTER_VALIDATE_INT) ?: null;
+        $status = (string) ($_GET['status'] ?? '');
+        $status = in_array($status, ['SUPPORTED', 'NEEDS_VERIFICATION', 'UNKNOWN'], true) ? $status : '';
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = max(1, min(100, (int) ($_GET['per_page'] ?? 20)));
+
+        $where = ['user_id = ?'];
+        $params = [$userId];
+        if ($subjectId !== null) {
+            $where[] = 'subject_id = ?';
+            $params[] = $subjectId;
+        }
+        if ($status !== '') {
+            $where[] = 'status = ?';
+            $params[] = $status;
+        }
+        if ($q !== '') {
+            $where[] = 'title LIKE ?';
+            $params[] = '%' . $q . '%';
+        }
+        $whereSql = implode(' AND ', $where);
+
+        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM lessons WHERE {$whereSql}");
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * $perPage;
+
+        $stmt = $pdo->prepare(
+            "SELECT id, subject_id, topic_id, scheme_id, title, status, duration_minutes, created_at
+               FROM lessons
+              WHERE {$whereSql}
+              ORDER BY created_at DESC
+              LIMIT {$perPage} OFFSET {$offset}"
+        );
+        $stmt->execute($params);
+
+        echo json_encode([
+            'success' => true,
+            'lessons' => $stmt->fetchAll(),
+            'page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'total_pages' => $totalPages,
+        ]);
         exit;
     }
 

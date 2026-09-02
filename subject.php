@@ -57,7 +57,7 @@ $pageIcon     = '📚';
 $pageHeading  = $subject['name'];
 $pageSubtitle = $subject['code'] . ' · ' . $subject['grade_level'] . ' · Strand: ' . $subject['strand'];
 $breadcrumbs  = [
-    ['label' => 'Subjects', 'href' => 'dashboard.php#subjects'],
+    ['label' => 'Subjects', 'href' => 'subjects.php'],
     ['label' => $subject['name']],
 ];
 require __DIR__ . '/includes/header.php';
