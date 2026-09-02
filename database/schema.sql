@@ -120,6 +120,20 @@ CREATE TABLE IF NOT EXISTS lesson_resources (
   CONSTRAINT fk_lr_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- AI-generated flashcards + Q&A for a lesson (one set per lesson)
+CREATE TABLE IF NOT EXISTS lesson_study_sets (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  lesson_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  status ENUM('SUPPORTED','NEEDS_VERIFICATION','UNKNOWN') NOT NULL DEFAULT 'SUPPORTED',
+  payload JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_study_lesson (lesson_id),
+  CONSTRAINT fk_study_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE,
+  CONSTRAINT fk_study_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Single-use password reset tokens (only the hash is stored)
 CREATE TABLE IF NOT EXISTS password_resets (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,

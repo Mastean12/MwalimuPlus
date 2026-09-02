@@ -192,3 +192,55 @@
 
     sync();
 })();
+
+/* lesson.php — flashcards & Q&A: flip cards, generate/regenerate. */
+(function () {
+    var wrap = document.getElementById('study-set');
+    if (!wrap) {
+        return;
+    }
+
+    document.addEventListener('click', function (event) {
+        var card = event.target.closest('[data-flip]');
+        if (card && wrap.contains(card)) {
+            card.classList.toggle('is-flipped');
+        }
+    });
+
+    var btn = document.getElementById('study-btn');
+    var result = document.getElementById('study-result');
+    if (!btn) {
+        return;
+    }
+
+    btn.addEventListener('click', function () {
+        btn.disabled = true;
+        btn.textContent = 'Generating…';
+        if (result) { result.hidden = true; }
+
+        window.Mwalimu.postJSON('api/generate-study.php', {
+            lesson_id: wrap.getAttribute('data-lesson-id')
+        }).then(function (data) {
+            if (data && data.success && data.study && !data.demo_mode
+                && (data.study.flashcards || []).length + (data.study.qa || []).length > 0) {
+                window.location.reload();
+                return;
+            }
+            if (result) {
+                result.hidden = false;
+                result.innerHTML = '<div class="result-unknown"><p>'
+                    + (data && (data.message || data.sijui || data.error) || 'Could not generate study material.')
+                    + '</p></div>';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Try again';
+        }).catch(function () {
+            if (result) {
+                result.hidden = false;
+                result.innerHTML = '<div class="result-unknown"><p>Network error — could not reach the server.</p></div>';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Try again';
+        });
+    });
+})();

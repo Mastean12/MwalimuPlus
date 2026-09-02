@@ -44,6 +44,12 @@ foreach ($resStmt->fetchAll() as $r) {
 }
 $csrf = csrf_token();
 
+// Existing AI flashcards + Q&A for this lesson, if any.
+$studyStmt = $pdo->prepare('SELECT status, payload FROM lesson_study_sets WHERE lesson_id = ?');
+$studyStmt->execute([$id]);
+$studyRow = $studyStmt->fetch();
+$study = ($studyRow && $studyRow['payload'] !== null) ? json_decode($studyRow['payload'], true) : null;
+
 $LESSON_SECTION_LABELS = [
     '' => 'Whole lesson',
     'objectives' => 'Learning objectives',
@@ -164,6 +170,52 @@ require __DIR__ . '/includes/lesson-body.php';
 
             <button type="submit" class="btn btn-primary">Add media</button>
         </form>
+    </section>
+
+    <section class="panel" id="study-set" data-lesson-id="<?= $id ?>">
+        <h2>Flashcards &amp; Q&amp;A</h2>
+        <p class="muted">Revision material generated from this lesson and its KICD source. AI output can be wrong — check it against the design.</p>
+
+        <div id="study-body">
+            <?php if ($study && (!empty($study['flashcards']) || !empty($study['qa']))): ?>
+                <?php if (!empty($study['flashcards'])): ?>
+                    <h3>Flashcards <span class="muted">— tap a card to flip</span></h3>
+                    <div class="flashcard-grid">
+                        <?php foreach ($study['flashcards'] as $c): ?>
+                            <button type="button" class="flashcard" data-flip>
+                                <span class="flashcard-face flashcard-front"><?= htmlspecialchars((string) ($c['front'] ?? '')) ?></span>
+                                <span class="flashcard-face flashcard-back">
+                                    <?= htmlspecialchars((string) ($c['back'] ?? '')) ?>
+                                    <?php if (!empty($c['reference'])): ?><small class="citations"><?= htmlspecialchars((string) $c['reference']) ?></small><?php endif; ?>
+                                </span>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($study['qa'])): ?>
+                    <h3>Questions &amp; answers</h3>
+                    <ol class="qa-list">
+                        <?php foreach ($study['qa'] as $q): ?>
+                            <li>
+                                <p class="qa-q"><?= htmlspecialchars((string) ($q['question'] ?? '')) ?></p>
+                                <details><summary>Show answer</summary>
+                                    <p><?= nl2br(htmlspecialchars((string) ($q['answer'] ?? ''))) ?>
+                                    <?php if (!empty($q['reference'])): ?> <small class="citations"><?= htmlspecialchars((string) $q['reference']) ?></small><?php endif; ?></p>
+                                </details>
+                            </li>
+                        <?php endforeach; ?>
+                    </ol>
+                <?php endif; ?>
+            <?php else: ?>
+                <p class="muted">None yet.</p>
+            <?php endif; ?>
+        </div>
+
+        <div id="study-result" hidden></div>
+        <button type="button" class="btn btn-primary" id="study-btn">
+            <?= $study ? 'Regenerate' : 'Generate flashcards &amp; Q&amp;A' ?>
+        </button>
     </section>
 <?php endif; ?>
 
