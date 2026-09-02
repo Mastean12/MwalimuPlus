@@ -498,6 +498,26 @@ body.modal-open { overflow: hidden; }
 .add-resource .link-remove { flex-shrink: 0; font-size: 1.1rem; line-height: 1; padding: .2rem .5rem; }
 .btn-small { padding: .3rem .7rem; font-size: .85rem; margin: .5rem 0 0; }
 
+/* Lesson media (grouped by section) */
+.media-group { margin-top: 1rem; }
+.media-group h3 {
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+    margin: 0 0 .2rem;
+}
+.resource-thumb {
+    max-width: 120px;
+    max-height: 90px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    display: block;
+    object-fit: cover;
+}
+.resource-item .resource-thumb + a { align-self: center; }
+
 /* Badges */
 .badge {
     display: inline-block;
@@ -847,6 +867,7 @@ textarea { resize: vertical; }
     .panel { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     .scheme-lesson { break-inside: avoid; }
     .add-resource, .resource-del, #materials { display: none; }
+    #lesson-media .add-resource, #lesson-media .resource-del { display: none; }
 }
 
 /* Responsive shell */

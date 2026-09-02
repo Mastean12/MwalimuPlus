@@ -101,6 +101,24 @@ CREATE TABLE IF NOT EXISTS scheme_resources (
   CONSTRAINT fk_sr_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Teacher-added media/resources attached to a lesson (lesson-level or per section)
+CREATE TABLE IF NOT EXISTS lesson_resources (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  lesson_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  section VARCHAR(40) NOT NULL DEFAULT '',
+  kind ENUM('youtube','link','image','pdf') NOT NULL,
+  label VARCHAR(190) NOT NULL,
+  url VARCHAR(600) NOT NULL DEFAULT '',
+  file_name VARCHAR(190) NOT NULL DEFAULT '',
+  file_size INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_lr_lesson (lesson_id),
+  CONSTRAINT fk_lr_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE,
+  CONSTRAINT fk_lr_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Single-use password reset tokens (only the hash is stored)
 CREATE TABLE IF NOT EXISTS password_resets (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,

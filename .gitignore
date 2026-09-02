@@ -20,3 +20,6 @@ scripts/dev.env
 !/uploads/scheme-resources/
 /uploads/scheme-resources/*
 !/uploads/scheme-resources/.gitkeep
+!/uploads/lesson-resources/
+/uploads/lesson-resources/*
+!/uploads/lesson-resources/.gitkeep

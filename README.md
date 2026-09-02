@@ -97,6 +97,11 @@ The exact URL depends on how your local server maps folders to domains.
 2. You land on the **Dashboard**, which lists the seeded subjects.
 3. Open a subject, then a topic, and use **Generate a lesson plan**.
 4. The generated lesson is saved and rendered on a printable page (Print / Save as PDF).
+5. On a saved lesson, the **Media & resources** panel lets you attach photos
+   (JPG/PNG/WEBP/GIF, 8 MB), PDFs (10 MB), YouTube videos and web links — to the
+   whole lesson or to a single section. Uploads are stored under
+   `uploads/lesson-resources/` (git-ignored) and served only through
+   `download.php` to the teacher who owns the lesson.
 
 ### Schemes of work
 

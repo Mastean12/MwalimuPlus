@@ -105,3 +105,90 @@
         });
     });
 })();
+
+/* lesson.php — confirm before any [data-confirm] delete form submits. */
+(function () {
+    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Remove this item?')) {
+                event.preventDefault();
+            }
+        });
+    });
+})();
+
+/* lesson.php — add-media form: link fields vs file by the selected type,
+   plus repeatable link rows with add / remove. */
+(function () {
+    var form = document.querySelector('.add-resource');
+    if (!form) {
+        return;
+    }
+    var urlField = form.querySelector('[data-resource-field="url"]');
+    var fileField = form.querySelector('[data-resource-field="file"]');
+    var firstUrl = urlField ? urlField.querySelector('input[name="url[]"]') : null;
+    var fileInput = fileField ? fileField.querySelector('input') : null;
+    var addLink = form.querySelector('[data-add-link]');
+    var linkFields = form.querySelector('[data-link-fields]');
+    var canAddLinks = addLink && linkFields && firstUrl;
+
+    function sync() {
+        var checked = form.querySelector('input[name="kind"]:checked');
+        var isFile = checked && (checked.value === 'pdf' || checked.value === 'image');
+        if (urlField) { urlField.hidden = isFile; }
+        if (fileField) { fileField.hidden = !isFile; }
+        if (firstUrl) { firstUrl.required = !isFile; }
+        if (canAddLinks) { addLink.hidden = isFile; }
+        if (fileInput) {
+            fileInput.required = isFile;
+            if (!isFile) { fileInput.value = ''; }
+        }
+    }
+
+    form.querySelectorAll('input[name="kind"]').forEach(function (radio) {
+        radio.addEventListener('change', sync);
+    });
+
+    if (canAddLinks) {
+        var makeRow = function (input) {
+            var row = document.createElement('div');
+            row.className = 'link-row';
+            row.appendChild(input);
+            var minus = document.createElement('button');
+            minus.type = 'button';
+            minus.className = 'btn-link-danger link-remove';
+            minus.setAttribute('aria-label', 'Remove this link');
+            minus.title = 'Remove';
+            minus.textContent = '−';
+            row.appendChild(minus);
+            return row;
+        };
+
+        Array.prototype.slice.call(linkFields.querySelectorAll('input[name="url[]"]'))
+            .forEach(function (input) {
+                linkFields.appendChild(makeRow(input));
+            });
+
+        addLink.addEventListener('click', function () {
+            var input = firstUrl.cloneNode(true);
+            input.value = '';
+            input.required = false;
+            linkFields.appendChild(makeRow(input));
+            input.focus();
+        });
+
+        linkFields.addEventListener('click', function (event) {
+            var minus = event.target.closest('.link-remove');
+            if (!minus) {
+                return;
+            }
+            if (linkFields.querySelectorAll('.link-row').length <= 1) {
+                minus.parentNode.querySelector('input').value = '';
+                return;
+            }
+            minus.parentNode.remove();
+        });
+    }
+
+    sync();
+})();
