@@ -21,25 +21,28 @@
             subjectBtn.disabled = true;
             subjectResult.hidden = true;
 
-            window.Mwalimu.postJSON('api/curriculum.php', {
-                action: 'add_subject',
-                code: document.getElementById('subject-code').value.trim(),
-                name: document.getElementById('subject-name').value.trim(),
-                strand: document.getElementById('subject-strand').value.trim(),
-                grade_level: document.getElementById('subject-grade').value.trim()
-            }).then(function (data) {
-                subjectResult.hidden = false;
-                if (!data || !data.success) {
-                    subjectResult.innerHTML = '<div class="alert alert-error">' + escapeHtml((data && data.error) || 'Could not add the subject.') + '</div>';
-                    return;
-                }
-                window.location.href = 'subject.php?id=' + encodeURIComponent(data.subject_id);
-            }).catch(function () {
-                subjectResult.hidden = false;
-                subjectResult.innerHTML = '<div class="alert alert-error">Network error — could not reach the server.</div>';
-            }).then(function () {
-                subjectBtn.disabled = false;
-            });
+            var formData = new FormData(subjectForm);
+            formData.set('action', 'add_subject');
+
+            fetch('api/curriculum.php', { method: 'POST', body: formData })
+                .then(function (res) {
+                    return res.json().catch(function () {
+                        return { success: false, error: 'Unexpected server response.' };
+                    });
+                })
+                .then(function (data) {
+                    subjectResult.hidden = false;
+                    if (!data || !data.success) {
+                        subjectResult.innerHTML = '<div class="alert alert-error">' + escapeHtml((data && data.error) || 'Could not add the subject.') + '</div>';
+                        return;
+                    }
+                    window.location.href = 'subject.php?id=' + encodeURIComponent(data.subject_id);
+                }).catch(function () {
+                    subjectResult.hidden = false;
+                    subjectResult.innerHTML = '<div class="alert alert-error">Network error — could not reach the server.</div>';
+                }).then(function () {
+                    subjectBtn.disabled = false;
+                });
         });
     }
 
@@ -55,6 +58,7 @@
 
             window.Mwalimu.postJSON('api/curriculum.php', {
                 action: 'add_topic',
+                csrf_token: document.getElementById('topic-csrf').value,
                 subject_id: parseInt(document.getElementById('topic-subject').value, 10),
                 name: document.getElementById('topic-name').value.trim(),
                 strand: document.getElementById('topic-strand').value.trim(),

@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS subjects (
   name VARCHAR(100) NOT NULL,
   strand VARCHAR(190) NOT NULL,
   grade_level VARCHAR(20) NOT NULL DEFAULT 'Grade 10',
+  source_pdf VARCHAR(255) NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_subjects_code (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

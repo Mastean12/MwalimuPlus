@@ -111,17 +111,33 @@ function verify_scheme_ownership(PDO $pdo, ?int $schemeId, int $userId): void
     }
 }
 
+/** Absolute path to a subject's uploaded curriculum PDF (curriculum admin UI), if it has one. */
+function subject_source_pdf_path(PDO $pdo, string $subjectName): ?string
+{
+    $stmt = $pdo->prepare('SELECT source_pdf FROM subjects WHERE name = ?');
+    $stmt->execute([$subjectName]);
+    $stored = $stmt->fetchColumn();
+    if (!$stored) {
+        return null;
+    }
+    $path = __DIR__ . '/../uploads/curriculum/' . basename((string) $stored);
+    return is_file($path) ? $path : null;
+}
+
 /**
- * Resolves the curriculum source for this exact topic in this exact subject:
- * the bundled KICD file if the topic has one, otherwise a teacher-pasted
- * source_text for a custom topic (added via the curriculum admin UI).
+ * Resolves the curriculum source for this exact topic in this exact subject, in
+ * priority order: the bundled KICD file, a teacher-pasted source_text, then the
+ * subject's uploaded curriculum PDF — the first two as SOURCES text, the PDF as
+ * a native document attached to the Claude request (see claude_complete()).
  *
- * No fuzzy fallback on purpose: if the ask isn't a topic we seeded from a strand
- * design, it is out of curriculum and must reach the Sijui path. Stretching one
- * strand file to cover topics it doesn't name is exactly the failure the
- * cite-or-Sijui rule exists to prevent.
+ * No fuzzy fallback on the topic name itself, on purpose: if the ask isn't a
+ * topic we seeded from a strand design, it is out of curriculum and must reach
+ * the Sijui path. Stretching one strand file to cover topics it doesn't name is
+ * exactly the failure the cite-or-Sijui rule exists to prevent. This also keeps
+ * the later INSERT's topic_id lookup resolvable — it never proceeds without a
+ * real matching topic row.
  */
-function find_topic_sources(PDO $pdo, string $subjectName, string $topicName): string
+function find_topic_sources(PDO $pdo, string $subjectName, string $topicName): array
 {
     $stmt = $pdo->prepare(
         'SELECT t.source_file, t.source_text
@@ -133,21 +149,27 @@ function find_topic_sources(PDO $pdo, string $subjectName, string $topicName): s
     $row = $stmt->fetch();
 
     if (!$row) {
-        return '';
+        return ['text' => '', 'pdf_path' => null];
     }
     if ($row['source_file'] !== '') {
-        return load_strand_source($row['source_file']);
+        return ['text' => load_strand_source($row['source_file']), 'pdf_path' => null];
     }
-    return (string) ($row['source_text'] ?? '');
+    if (trim((string) ($row['source_text'] ?? '')) !== '') {
+        return ['text' => (string) $row['source_text'], 'pdf_path' => null];
+    }
+
+    return ['text' => '', 'pdf_path' => subject_source_pdf_path($pdo, $subjectName)];
 }
 
 $request = read_request();
 $pdo = db();
 verify_scheme_ownership($pdo, $request['scheme_id'], (int) $_SESSION['user_id']);
-$sources = find_topic_sources($pdo, $request['subject'], $request['topic']);
+$resolved = find_topic_sources($pdo, $request['subject'], $request['topic']);
+$sources = $resolved['text'];
+$pdfPath = $resolved['pdf_path'];
 
 // Out-of-source (no corpus at all): answer with sijui, never invent a lesson.
-if (trim($sources) === '') {
+if (trim($sources) === '' && $pdfPath === null) {
     echo json_encode([
         'success' => true,
         'disclosure' => disclosure(),
@@ -209,8 +231,8 @@ if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
     exit;
 }
 
-$system = claude_system_prompt($request['subject'], $request['topic'], $sources);
-$raw = claude_complete($system, $userPrompt);
+$system = claude_system_prompt($request['subject'], $request['topic'], $sources, $pdfPath !== null);
+$raw = claude_complete($system, $userPrompt, CLAUDE_MAX_TOKENS, $pdfPath);
 
 if ($raw === null) {
     http_response_code(502);

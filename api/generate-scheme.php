@@ -104,19 +104,21 @@ function read_request(): array
 }
 
 /**
- * Resolves a subject's strand label and the curriculum source text for a scheme
- * covering it — every topic's source, combined. Most subjects' topics all point
- * at the same bundled KICD file (deduped here so it isn't repeated per topic);
- * a custom subject's topics instead carry their own teacher-pasted source_text,
- * each of which is distinct, so all of them are included.
+ * Resolves a subject's strand label and curriculum source for a scheme covering
+ * it, in priority order: every topic's source_file/source_text combined (most
+ * subjects' topics all point at the same bundled KICD file, deduped here so it
+ * isn't repeated; a custom subject's topics instead carry their own distinct
+ * teacher-pasted text, so all of them are included) — or, when no topic has
+ * either, the subject's own uploaded curriculum PDF, attached as a native
+ * document to the Claude request instead of embedded as SOURCES text.
  */
 function resolve_subject_source(PDO $pdo, string $subjectName): array
 {
-    $stmt = $pdo->prepare('SELECT id, strand FROM subjects WHERE name = ?');
+    $stmt = $pdo->prepare('SELECT id, strand, source_pdf FROM subjects WHERE name = ?');
     $stmt->execute([$subjectName]);
     $subject = $stmt->fetch();
     if (!$subject) {
-        return ['subject_id' => 0, 'strand' => '', 'sources' => ''];
+        return ['subject_id' => 0, 'strand' => '', 'sources' => '', 'pdf_path' => null];
     }
 
     $stmt = $pdo->prepare('SELECT source_file, source_text FROM topics WHERE subject_id = ?');
@@ -134,11 +136,19 @@ function resolve_subject_source(PDO $pdo, string $subjectName): array
             $chunks[] = (string) $topic['source_text'];
         }
     }
+    $sources = implode("\n\n", array_filter($chunks, static fn ($c) => trim($c) !== ''));
+
+    $pdfPath = null;
+    if ($sources === '' && $subject['source_pdf']) {
+        $path = __DIR__ . '/../uploads/curriculum/' . basename((string) $subject['source_pdf']);
+        $pdfPath = is_file($path) ? $path : null;
+    }
 
     return [
         'subject_id' => (int) $subject['id'],
         'strand' => (string) $subject['strand'],
-        'sources' => implode("\n\n", array_filter($chunks, static fn ($c) => trim($c) !== '')),
+        'sources' => $sources,
+        'pdf_path' => $pdfPath,
     ];
 }
 
@@ -146,9 +156,10 @@ $request = read_request();
 $pdo = db();
 $resolved = resolve_subject_source($pdo, $request['subject']);
 $sources = $resolved['sources'];
+$pdfPath = $resolved['pdf_path'];
 
 // Out-of-source (no corpus at all): answer with sijui, never invent a scheme.
-if ($resolved['subject_id'] === 0 || trim($sources) === '') {
+if ($resolved['subject_id'] === 0 || (trim($sources) === '' && $pdfPath === null)) {
     echo json_encode([
         'success' => true,
         'disclosure' => disclosure(),
@@ -218,8 +229,8 @@ if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
     exit;
 }
 
-$system = claude_scheme_system_prompt($request['subject'], $resolved['strand'], $sources);
-$raw = claude_complete($system, $userPrompt, 8000);
+$system = claude_scheme_system_prompt($request['subject'], $resolved['strand'], $sources, $pdfPath !== null);
+$raw = claude_complete($system, $userPrompt, 8000, $pdfPath);
 
 if ($raw === null) {
     http_response_code(502);

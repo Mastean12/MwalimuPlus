@@ -23,3 +23,6 @@ scripts/dev.env
 !/uploads/lesson-resources/
 /uploads/lesson-resources/*
 !/uploads/lesson-resources/.gitkeep
+!/uploads/curriculum/
+/uploads/curriculum/*
+!/uploads/curriculum/.gitkeep

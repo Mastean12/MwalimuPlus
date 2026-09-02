@@ -162,6 +162,14 @@ function ensure_schema(PDO $pdo): void
         $pdo->exec('ALTER TABLE topics ADD COLUMN source_text MEDIUMTEXT NULL AFTER source_file');
     }
 
+    // subjects.source_pdf: an uploaded curriculum PDF covering the whole subject
+    // (stored filename under uploads/curriculum/), attached natively to the Claude
+    // API request as a document — the same role source_file/source_text play, for
+    // a subject added via the curriculum admin UI with no bundled corpus of its own.
+    if (!column_exists($pdo, 'subjects', 'source_pdf')) {
+        $pdo->exec('ALTER TABLE subjects ADD COLUMN source_pdf VARCHAR(255) NULL AFTER grade_level');
+    }
+
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS scheme_resources (
             id INT UNSIGNED NOT NULL AUTO_INCREMENT,

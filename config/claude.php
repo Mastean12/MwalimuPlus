@@ -49,19 +49,30 @@ function load_strand_source(string $sourceFile): string
     return $text === false ? '' : $text;
 }
 
-/** Builds the grounded system prompt with the corpus injected as SOURCES. */
-function claude_system_prompt(string $subject, string $topic, string $sources): string
+/**
+ * Builds the grounded system prompt with the corpus injected as SOURCES.
+ *
+ * $viaPdf: true when the SOURCES are attached as a PDF document on the
+ * message instead of embedded as text here (see claude_complete()'s $pdfPath).
+ */
+function claude_system_prompt(string $subject, string $topic, string $sources, bool $viaPdf = false): string
 {
     $sources = trim($sources);
-    if ($sources === '') {
-        $sources = '(No curriculum source text was provided for this subject/topic.)';
+    if ($viaPdf) {
+        $sourcesBlock = '(Provided as an attached PDF document — see the user message. '
+            . 'Treat it exactly as the SOURCES text described above: split into pages, '
+            . 'each cited as [design p.<n>] using the page number printed on that page.)';
+    } elseif ($sources === '') {
+        $sourcesBlock = '(No curriculum source text was provided for this subject/topic.)';
+    } else {
+        $sourcesBlock = $sources;
     }
 
     return <<<PROMPT
 You are Mwalimu AI, a lesson-prep assistant for a Grade 10 teacher in Kenya.
-The teacher is the only user. You have exactly ONE source of truth: the SOURCES
-block below, which is one official KICD strand design split into pages marked
-"DESIGN PAGE <n>".
+The teacher is the only user. You have exactly ONE source of truth: SOURCES,
+one official KICD strand design split into pages marked "DESIGN PAGE <n>",
+given below as text or attached to this message as a PDF.
 
 RULES, in priority order:
 1. Use ONLY the SOURCES. Treat nothing else as fact — not your training, not
@@ -84,7 +95,7 @@ REQUESTED SUBJECT: {$subject}
 REQUESTED TOPIC: {$topic}
 
 SOURCES:
-{$sources}
+{$sourcesBlock}
 PROMPT;
 }
 
@@ -94,18 +105,24 @@ PROMPT;
  * Same source-of-truth discipline as claude_system_prompt(): one KICD strand
  * design, cite every row, refuse when unsupported.
  */
-function claude_scheme_system_prompt(string $subject, string $strand, string $sources): string
+function claude_scheme_system_prompt(string $subject, string $strand, string $sources, bool $viaPdf = false): string
 {
     $sources = trim($sources);
-    if ($sources === '') {
-        $sources = '(No curriculum source text was provided for this subject.)';
+    if ($viaPdf) {
+        $sourcesBlock = '(Provided as an attached PDF document — see the user message. '
+            . 'Treat it exactly as the SOURCES text described above: split into pages, '
+            . 'each cited as "design p.<n>" using the page number printed on that page.)';
+    } elseif ($sources === '') {
+        $sourcesBlock = '(No curriculum source text was provided for this subject.)';
+    } else {
+        $sourcesBlock = $sources;
     }
 
     return <<<PROMPT
 You are Mwalimu AI, a lesson-prep assistant for a Grade 10 teacher in Kenya.
-The teacher is the only user. You have exactly ONE source of truth: the SOURCES
-block below, which is one official KICD strand design split into pages marked
-"DESIGN PAGE <n>".
+The teacher is the only user. You have exactly ONE source of truth: SOURCES,
+one official KICD strand design split into pages marked "DESIGN PAGE <n>",
+given below as text or attached to this message as a PDF.
 
 RULES, in priority order:
 1. Use ONLY the SOURCES. Treat nothing else as fact — not your training, not
@@ -127,7 +144,7 @@ REQUESTED SUBJECT: {$subject}
 REQUESTED STRAND: {$strand}
 
 SOURCES:
-{$sources}
+{$sourcesBlock}
 PROMPT;
 }
 
@@ -180,20 +197,44 @@ function claude_extract_json(?string $raw): ?array
     return is_array($decoded) ? $decoded : null;
 }
 
-/** Calls the Anthropic Messages API and returns the raw text content, or null on failure. */
-function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS): ?string
+/**
+ * Calls the Anthropic Messages API and returns the raw text content, or null on failure.
+ *
+ * $pdfPath: when set, attaches that file as a native PDF document on the user
+ * message (Claude reads it directly — text, tables, diagrams) instead of
+ * relying on the SOURCES text embedded in $system. Used for a curriculum-admin
+ * subject whose only source is an uploaded PDF (see find_topic_sources() in
+ * api/generate-lesson.php and resolve_subject_source() in api/generate-scheme.php).
+ */
+function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS, ?string $pdfPath = null): ?string
 {
     $key = claude_api_key();
     if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
         return null; // Caller is responsible for surfacing the placeholder message.
     }
 
+    $content = [];
+    if ($pdfPath !== null && is_file($pdfPath)) {
+        $bytes = @file_get_contents($pdfPath);
+        if ($bytes !== false) {
+            $content[] = [
+                'type' => 'document',
+                'source' => [
+                    'type' => 'base64',
+                    'media_type' => 'application/pdf',
+                    'data' => base64_encode($bytes),
+                ],
+            ];
+        }
+    }
+    $content[] = ['type' => 'text', 'text' => $userPrompt];
+
     $body = json_encode([
         'model' => CLAUDE_MODEL,
         'max_tokens' => $maxTokens,
         'system' => $system,
         'messages' => [
-            ['role' => 'user', 'content' => $userPrompt],
+            ['role' => 'user', 'content' => $content],
         ],
     ]);
 
