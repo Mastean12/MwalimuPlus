@@ -27,3 +27,4 @@ $activeNav = $activeNav ?? '';
 </header>
 <?php endif; ?>
 <main class="container">
+<?php render_flash(); ?>

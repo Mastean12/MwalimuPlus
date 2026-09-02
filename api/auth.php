@@ -2,15 +2,16 @@
 /**
  * Auth API (JSON).
  *
- * POST /api/auth.php { action: "me" }          -> current session
- * POST /api/auth.php { action: "login", ... }  -> sign in
- * POST /api/auth.php { action: "logout" }      -> sign out
- * POST /api/auth.php { action: "register", ... } -> create account
+ * POST /api/auth.php
+ *   { action: "me" }                  -> current session
+ *   { action: "login", email, password }
+ *   { action: "logout" }
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/helpers.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -19,7 +20,10 @@ if (session_status() === PHP_SESSION_NONE) {
 header('Content-Type: application/json; charset=utf-8');
 
 $input = json_decode(file_get_contents('php://input'), true);
-$action = $input['action'] ?? $_POST['action'] ?? 'me';
+if (!is_array($input)) {
+    $input = $_POST;
+}
+$action = $input['action'] ?? 'me';
 
 try {
     $pdo = db();
@@ -33,13 +37,16 @@ try {
             }
             echo json_encode([
                 'success' => true,
-                'user' => ['id' => (int) $_SESSION['user_id'], 'name' => $_SESSION['user_name'] ?? ''],
+                'user' => [
+                    'id' => (int) $_SESSION['user_id'],
+                    'name' => $_SESSION['user_name'] ?? '',
+                ],
             ]);
             break;
 
         case 'login':
-            $email = trim($input['email'] ?? '');
-            $password = $input['password'] ?? '';
+            $email = trim((string) ($input['email'] ?? ''));
+            $password = (string) ($input['password'] ?? '');
 
             $stmt = $pdo->prepare('SELECT id, name, password_hash FROM users WHERE email = ?');
             $stmt->execute([$email]);
@@ -58,29 +65,6 @@ try {
             echo json_encode([
                 'success' => true,
                 'user' => ['id' => (int) $user['id'], 'name' => $user['name']],
-            ]);
-            break;
-
-        case 'register':
-            $name = trim($input['name'] ?? '');
-            $email = trim($input['email'] ?? '');
-            $password = $input['password'] ?? '';
-
-            if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'error' => 'Name, valid email, and a password of at least 8 characters are required.']);
-                break;
-            }
-
-            $stmt = $pdo->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
-            $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
-
-            $_SESSION['user_id'] = (int) $pdo->lastInsertId();
-            $_SESSION['user_name'] = $name;
-
-            echo json_encode([
-                'success' => true,
-                'user' => ['id' => (int) $pdo->lastInsertId(), 'name' => $name],
             ]);
             break;
 
