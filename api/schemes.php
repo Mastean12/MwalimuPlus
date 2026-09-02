@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/session.php';
+require_once __DIR__ . '/../config/helpers.php';
 secure_session_start();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -70,9 +70,37 @@ try {
             echo json_encode(['success' => false, 'error' => 'Scheme id is required.']);
             exit;
         }
+        $id = (int) $input['id'];
+
+        if (($input['action'] ?? '') === 'rename') {
+            $title = trim((string) ($input['title'] ?? ''));
+            if ($title === '') {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'error' => 'Title cannot be empty.']);
+                exit;
+            }
+            $title = clip($title, 190);
+
+            $stmt = $pdo->prepare('UPDATE schemes SET title = ? WHERE id = ? AND user_id = ?');
+            $stmt->execute([$title, $id, $userId]);
+
+            if ($stmt->rowCount() === 0) {
+                // rowCount is 0 when the title is unchanged too; confirm ownership.
+                $check = $pdo->prepare('SELECT 1 FROM schemes WHERE id = ? AND user_id = ?');
+                $check->execute([$id, $userId]);
+                if (!$check->fetchColumn()) {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'error' => 'Scheme not found.']);
+                    exit;
+                }
+            }
+
+            echo json_encode(['success' => true, 'title' => $title]);
+            exit;
+        }
 
         $stmt = $pdo->prepare('DELETE FROM schemes WHERE id = ? AND user_id = ?');
-        $stmt->execute([(int) $input['id'], $userId]);
+        $stmt->execute([$id, $userId]);
 
         if ($stmt->rowCount() === 0) {
             http_response_code(404);

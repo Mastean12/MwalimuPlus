@@ -20,6 +20,26 @@ function app_has_users(): bool
     return $has;
 }
 
+/**
+ * Truncates a string to at most $max bytes without splitting a UTF-8 sequence.
+ * Used to fit user input into VARCHAR columns; mbstring is not assumed.
+ */
+function clip(string $value, int $max): string
+{
+    if (strlen($value) <= $max) {
+        return $value;
+    }
+    $cut = substr($value, 0, $max);
+    // Drop a trailing partial multi-byte sequence.
+    while ($cut !== '' && (ord($cut[strlen($cut) - 1]) & 0xC0) === 0x80) {
+        $cut = substr($cut, 0, -1);
+    }
+    if ($cut !== '' && (ord($cut[strlen($cut) - 1]) & 0x80) !== 0) {
+        $cut = substr($cut, 0, -1); // lone lead byte
+    }
+    return $cut;
+}
+
 /** Sets a one-shot flash message shown on the next page render. */
 function set_flash(string $kind, string $message): void
 {

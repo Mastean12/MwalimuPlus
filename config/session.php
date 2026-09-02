@@ -39,6 +39,23 @@ function secure_session_start(): void
     session_start();
 }
 
+/** Returns the current session CSRF token, creating one on first use. */
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/** Constant-time check of a submitted CSRF token against the session token. */
+function csrf_verify(?string $token): bool
+{
+    return !empty($_SESSION['csrf_token'])
+        && is_string($token)
+        && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 /** Returns the params used for the session cookie (for clearing it on logout). */
 function session_cookie_params(): array
 {

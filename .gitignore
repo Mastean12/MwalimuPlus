@@ -13,3 +13,10 @@ Thumbs.db
 
 # local dev
 scripts/dev.env
+
+# Teacher-uploaded files (keep the dir guards under version control)
+/uploads/*
+!/uploads/.htaccess
+!/uploads/scheme-resources/
+/uploads/scheme-resources/*
+!/uploads/scheme-resources/.gitkeep

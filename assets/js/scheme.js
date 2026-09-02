@@ -114,3 +114,88 @@
         });
     });
 })();
+
+/* scheme.php — confirm before any [data-confirm] delete form submits. */
+(function () {
+    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!window.confirm('Remove this material?')) {
+                event.preventDefault();
+            }
+        });
+    });
+})();
+
+/* scheme.php — add-material form: show URL vs file by the selected type. */
+(function () {
+    var form = document.querySelector('.add-resource');
+    if (!form) {
+        return;
+    }
+    var urlField = form.querySelector('[data-resource-field="url"]');
+    var fileField = form.querySelector('[data-resource-field="file"]');
+    var urlInput = urlField ? urlField.querySelector('input') : null;
+    var fileInput = fileField ? fileField.querySelector('input') : null;
+
+    function sync() {
+        var checked = form.querySelector('input[name="kind"]:checked');
+        var isPdf = checked && checked.value === 'pdf';
+        if (urlField) { urlField.hidden = isPdf; }
+        if (fileField) { fileField.hidden = !isPdf; }
+        if (urlInput) {
+            urlInput.required = !isPdf;
+            if (isPdf) { urlInput.value = ''; }
+        }
+        if (fileInput) {
+            fileInput.required = isPdf;
+            if (!isPdf) { fileInput.value = ''; }
+        }
+    }
+
+    form.querySelectorAll('input[name="kind"]').forEach(function (radio) {
+        radio.addEventListener('change', sync);
+    });
+    sync();
+})();
+
+/* scheme.php — rename the scheme from the header button. */
+(function () {
+    var btn = document.querySelector('[data-rename-scheme]');
+    var heading = document.querySelector('.page-head h1');
+    if (!btn || !heading) {
+        return;
+    }
+    var id = btn.getAttribute('data-rename-scheme');
+
+    btn.addEventListener('click', function () {
+        var current = heading.textContent.trim();
+        var next = window.prompt('Rename this scheme', current);
+        if (next === null) {
+            return;
+        }
+        next = next.trim();
+        if (!next || next === current) {
+            return;
+        }
+        btn.disabled = true;
+        window.Mwalimu.postJSON('api/schemes.php', { action: 'rename', id: id, title: next })
+            .then(function (data) {
+                if (data && data.success) {
+                    heading.textContent = data.title;
+                    document.title = data.title + ' · MwalimuPlus';
+                    var crumb = document.querySelector('.topbar .breadcrumbs > *:last-child');
+                    if (crumb) {
+                        crumb.textContent = data.title;
+                    }
+                } else {
+                    window.alert((data && data.error) || 'Could not rename the scheme.');
+                }
+            })
+            .catch(function () {
+                window.alert('Network error — could not rename the scheme.');
+            })
+            .then(function () {
+                btn.disabled = false;
+            });
+    });
+})();

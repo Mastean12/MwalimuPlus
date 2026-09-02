@@ -108,6 +108,14 @@ page it came from, and an unsupported strand returns a Sijui message rather than
 invented rows. The saved scheme has its own printable page, and each row links
 back to the subject's topic list to generate the matching lesson plan.
 
+On a saved scheme you can attach **learning materials** — a YouTube link, any web
+link, or an uploaded PDF (10 MB max) — either to the whole scheme or to a single
+lesson row. These are teacher-added; the AI never contributes links. Uploaded
+PDFs are stored under `uploads/scheme-resources/` (git-ignored) and served only
+through `download.php` to the teacher who owns the scheme. `uploads/.htaccess`
+blocks direct web access on Apache; on other servers, keep `uploads/` outside the
+document root or add an equivalent rule.
+
 ### API
 
 The endpoints require a logged-in session cookie. Full contract for `POST /api/generate-lesson.php`:

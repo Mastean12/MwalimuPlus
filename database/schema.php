@@ -124,6 +124,25 @@ function ensure_schema(PDO $pdo): void
     );
 
     $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS scheme_resources (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            scheme_id INT UNSIGNED NOT NULL,
+            user_id INT UNSIGNED NULL,
+            row_key VARCHAR(16) NOT NULL DEFAULT '',
+            kind ENUM('youtube','link','pdf') NOT NULL,
+            label VARCHAR(190) NOT NULL,
+            url VARCHAR(600) NOT NULL DEFAULT '',
+            file_name VARCHAR(190) NOT NULL DEFAULT '',
+            file_size INT UNSIGNED NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_sr_scheme (scheme_id),
+            CONSTRAINT fk_sr_scheme FOREIGN KEY (scheme_id) REFERENCES schemes (id) ON DELETE CASCADE,
+            CONSTRAINT fk_sr_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
         "CREATE TABLE IF NOT EXISTS password_resets (
             id INT UNSIGNED NOT NULL AUTO_INCREMENT,
             user_id INT UNSIGNED NOT NULL,
