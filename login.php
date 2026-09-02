@@ -85,7 +85,7 @@ $pageTitle = 'Sign in';
 
         <ul class="auth-points">
             <li>Every plan cites the strand design it came from</li>
-            <li>Built for the 40-minute classroom period</li>
+            <li>Built for the 40 minute classroom period</li>
             <li>Works offline once a lesson pack is saved</li>
         </ul>
 

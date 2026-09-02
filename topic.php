@@ -67,7 +67,7 @@ require __DIR__ . '/includes/header.php';
                 placeholder="e.g. I have never taught this topic before."></textarea>
         </label>
 
-        <label>Available resources (comma-separated)
+        <label>Available resources (separated by commas)
             <input type="text" id="resources" value="chalkboard, chalk" placeholder="chalkboard, chalk">
         </label>
 

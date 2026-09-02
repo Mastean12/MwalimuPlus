@@ -101,7 +101,7 @@
                 var row = rows[index];
                 html += '<article class="scheme-lesson" data-row-index="' + index + '">' +
                     '<h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + '</h3>' +
-                    field('Sub-strand', 'sub_strand', row.sub_strand, false) +
+                    field('Sub strand', 'sub_strand', row.sub_strand, false) +
                     field('Specific learning outcomes', 'specific_outcomes', row.specific_outcomes, true) +
                     field('Key inquiry question', 'key_inquiry_question', row.key_inquiry_question, false) +
                     field('Learning experiences', 'learning_experiences', row.learning_experiences, true) +
@@ -440,7 +440,7 @@
                 var row = rows[index];
                 html += '<article class="scheme-lesson" data-row-index="' + index + '">' +
                     '<h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + '</h3>' +
-                    field('Sub-strand', 'sub_strand', row.sub_strand, false) +
+                    field('Sub strand', 'sub_strand', row.sub_strand, false) +
                     field('Specific learning outcomes', 'specific_outcomes', row.specific_outcomes, true) +
                     field('Key inquiry question', 'key_inquiry_question', row.key_inquiry_question, false) +
                     field('Learning experiences', 'learning_experiences', row.learning_experiences, true) +
