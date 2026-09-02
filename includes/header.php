@@ -74,8 +74,10 @@ $navItems = [
             <div class="topbar-right">
                 <time class="topbar-clock" id="topbar-clock" datetime=""></time>
                 <div class="topbar-user">
-                    <span class="user-avatar" aria-hidden="true"><?= htmlspecialchars(strtoupper(substr(current_user_name(), 0, 1))) ?></span>
-                    <span class="user-name"><?= htmlspecialchars(current_user_name()) ?></span>
+                    <a class="topbar-user-link" href="profile.php" data-open-profile>
+                        <span class="user-avatar" aria-hidden="true"><?= htmlspecialchars(strtoupper(substr(current_user_name(), 0, 1))) ?></span>
+                        <span class="user-name"><?= htmlspecialchars(current_user_name()) ?></span>
+                    </a>
                     <a class="nav-logout" href="logout.php">Log out</a>
                 </div>
             </div>

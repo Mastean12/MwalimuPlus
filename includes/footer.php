@@ -10,6 +10,15 @@ declare(strict_types=1);
 <?php if (!empty($showHeader)): ?>
     </div><!-- .app-main -->
 </div><!-- .app -->
+
+<div class="modal-backdrop" hidden data-profile-modal-backdrop></div>
+<div class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" data-profile-modal>
+    <div class="modal-header">
+        <h2 id="profile-modal-title">Your profile</h2>
+        <button type="button" class="modal-close" aria-label="Close" data-profile-modal-close>&times;</button>
+    </div>
+    <div class="modal-body" data-profile-modal-body></div>
+</div>
 <?php endif; ?>
 <script src="assets/js/app.js"></script>
 <script>

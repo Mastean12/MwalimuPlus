@@ -154,6 +154,9 @@ p { margin: .35rem 0; }
     font-size: .85rem;
     text-transform: uppercase;
 }
+.topbar-user-link { display: flex; align-items: center; gap: .6rem; color: var(--ink); }
+.topbar-user-link:hover { text-decoration: none; }
+.topbar-user-link:hover .user-name { text-decoration: underline; }
 .user-name { font-size: .9rem; font-weight: 600; }
 .nav-logout {
     border: 1px solid var(--line);
@@ -316,6 +319,63 @@ p { margin: .35rem 0; }
     margin: 1.25rem 0;
     box-shadow: var(--shadow);
 }
+/* Profile */
+.profile-summary { display: flex; align-items: center; gap: 1.1rem; }
+.profile-summary h2 { margin: 0; }
+.profile-summary p { margin: .15rem 0 0; }
+.user-avatar-lg {
+    width: 3.4rem;
+    height: 3.4rem;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+/* Profile modal */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(18, 69, 44, .45);
+}
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 51;
+    width: min(560px, calc(100vw - 2rem));
+    max-height: min(680px, calc(100vh - 3rem));
+    overflow-y: auto;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 70px rgba(6, 32, 19, .35);
+}
+.modal-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+}
+.modal-header h2 { margin: 0; }
+.modal-close {
+    border: none;
+    background: transparent;
+    padding: .2rem .5rem;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--muted);
+    cursor: pointer;
+}
+.modal-close:hover { color: var(--ink); }
+.modal-body { padding: 1.4rem; }
+.modal-body .panel { margin: 0 0 1.25rem; box-shadow: none; }
+.modal-body .panel:last-child { margin-bottom: 0; }
+body.modal-open { overflow: hidden; }
 
 /* Tables */
 .table { width: 100%; border-collapse: collapse; }
