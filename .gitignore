@@ -10,3 +10,6 @@ Thumbs.db
 
 # Composer dependencies (regenerate with: composer install)
 /vendor/
+
+# local dev
+scripts/dev.env

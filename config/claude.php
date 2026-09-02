@@ -11,8 +11,18 @@
 declare(strict_types=1);
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-3-5-haiku-latest';
-const CLAUDE_MAX_TOKENS = 2048;
+
+/**
+ * Generation model. `claude-opus-5` gives the strongest "cite every section or
+ * say Sijui" discipline, which is the behaviour the day is judged on. If the
+ * live demo feels slow, `claude-sonnet-5` is a one-line swap (faster, cheaper,
+ * same request shape).
+ */
+const CLAUDE_MODEL = 'claude-opus-5';
+const CLAUDE_MAX_TOKENS = 2500;
+
+/** cURL timeout. A grounded lesson call runs ~15-30s; give it headroom. */
+const CLAUDE_TIMEOUT_SECONDS = 120;
 
 /** Placeholder only — replace with your real key or set CLAUDE_API_KEY in the environment. */
 function claude_api_key(): string
@@ -45,18 +55,26 @@ function claude_system_prompt(string $subject, string $topic, string $sources): 
 
     return <<<PROMPT
 You are Mwalimu AI, a lesson-prep assistant for a Grade 10 teacher in Kenya.
-The teacher is the only user.
+The teacher is the only user. You have exactly ONE source of truth: the SOURCES
+block below, which is one official KICD strand design split into pages marked
+"DESIGN PAGE <n>".
 
 RULES, in priority order:
-1. Use ONLY the SOURCES below (the KICD strand design). Treat nothing else as fact.
-2. Every section you output cites the source it came from, e.g. [design p.14].
-3. If the SOURCES don't support the request, do not generate a lesson. Return
-   status "UNKNOWN" and a sijui message naming the section or office to check.
-   Never guess. Never use general knowledge. Never fabricate a citation.
-4. Produce teaching material only: objectives, explanation, prerequisites,
-   examples, board plan, teacher questions, misconceptions, quick check, notes.
+1. Use ONLY the SOURCES. Treat nothing else as fact — not your training, not
+   "standard" teaching practice. If a fact is not on a DESIGN PAGE, it does not
+   exist for this task.
+2. Cite every section. Each objective, explanation, prerequisite, example,
+   question, misconception and note ends with the page it came from, written
+   exactly as [design p.<n>] using the DESIGN PAGE numbers in the SOURCES.
+   Never invent or guess a page number.
+3. Refuse when unsupported. If the requested topic is not directly covered by a
+   DESIGN PAGE in the SOURCES, do NOT write a lesson: return {"lesson": null} and
+   nothing else. Do not partially answer. Do not fill gaps from general knowledge.
+4. Teaching material only: objectives, teacher_explanation, prerequisites,
+   examples, board_plan, teacher_questions, common_misconceptions, quick_check,
+   teacher_notes.
 5. Never request or process learner names, learner work, or individual learner data.
-6. Start output with the disclosure line. Return ONLY valid JSON in the agreed schema.
+6. Output ONLY the JSON object in the agreed schema — no prose, no markdown fences.
 
 REQUESTED SUBJECT: {$subject}
 REQUESTED TOPIC: {$topic}
@@ -88,7 +106,7 @@ function claude_complete(string $system, string $userPrompt): ?string
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => $body,
-        CURLOPT_TIMEOUT => 60,
+        CURLOPT_TIMEOUT => CLAUDE_TIMEOUT_SECONDS,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
             'x-api-key: ' . $key,
@@ -107,7 +125,25 @@ function claude_complete(string $system, string $userPrompt): ?string
     }
 
     $decoded = json_decode($response, true);
-    $text = $decoded['content'][0]['text'] ?? null;
+    if (!is_array($decoded)) {
+        error_log('Claude API returned non-JSON: ' . substr((string) $response, 0, 500));
+        return null;
+    }
 
-    return is_string($text) ? $text : null;
+    // A safety classifier can decline the request (HTTP 200, stop_reason
+    // "refusal") — there is no usable lesson text in that case.
+    if (($decoded['stop_reason'] ?? '') === 'refusal') {
+        error_log('Claude declined the request: ' . json_encode($decoded['stop_details'] ?? null));
+        return null;
+    }
+
+    // claude-opus-5 runs adaptive thinking by default, so content[] can lead
+    // with a "thinking" block. Take the first real text block, not content[0].
+    foreach ($decoded['content'] ?? [] as $block) {
+        if (($block['type'] ?? '') === 'text' && isset($block['text']) && is_string($block['text'])) {
+            return $block['text'];
+        }
+    }
+
+    return null;
 }

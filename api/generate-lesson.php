@@ -30,6 +30,10 @@ require_once __DIR__ . '/../config/claude.php';
 require_once __DIR__ . '/../config/session.php';
 secure_session_start();
 
+// A grounded generation call runs ~15-30s. Don't let PHP's own execution limit
+// (often 30s on cPanel) kill it before cURL's timeout does.
+set_time_limit(CLAUDE_TIMEOUT_SECONDS + 30);
+
 header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['user_id'])) {
@@ -85,10 +89,16 @@ function read_request(): array
     ];
 }
 
-/** Locates the corpus file for this topic, falling back to the subject's strand file. */
-function find_source_file(PDO $pdo, int $userId, string $subjectName, string $topicName): ?string
+/**
+ * Locates the corpus file for this exact topic in this exact subject.
+ *
+ * No fuzzy fallback on purpose: if the ask isn't a topic we seeded from a strand
+ * design, it is out of curriculum and must reach the Sijui path. Stretching one
+ * strand file to cover topics it doesn't name is exactly the failure the
+ * cite-or-Sijui rule exists to prevent.
+ */
+function find_source_file(PDO $pdo, string $subjectName, string $topicName): ?string
 {
-    // Exact topic match first.
     $stmt = $pdo->prepare(
         'SELECT t.source_file
            FROM topics t
@@ -97,14 +107,7 @@ function find_source_file(PDO $pdo, int $userId, string $subjectName, string $to
     );
     $stmt->execute([$topicName, $subjectName]);
     $row = $stmt->fetch();
-    if ($row && $row['source_file'] !== '') {
-        return $row['source_file'];
-    }
 
-    // Fall back to the subject's strand file so similarly-worded topics stay grounded.
-    $stmt = $pdo->prepare('SELECT source_file FROM topics t JOIN subjects s ON s.id = t.subject_id WHERE s.name = ? LIMIT 1');
-    $stmt->execute([$subjectName]);
-    $row = $stmt->fetch();
     if ($row && $row['source_file'] !== '') {
         return $row['source_file'];
     }
@@ -114,7 +117,7 @@ function find_source_file(PDO $pdo, int $userId, string $subjectName, string $to
 
 $request = read_request();
 $pdo = db();
-$sourceFile = find_source_file($pdo, (int) $_SESSION['user_id'], $request['subject'], $request['topic']);
+$sourceFile = find_source_file($pdo, $request['subject'], $request['topic']);
 $sources = $sourceFile !== null ? load_strand_source($sourceFile) : '';
 
 // Out-of-source (no corpus at all): answer with sijui, never invent a lesson.
