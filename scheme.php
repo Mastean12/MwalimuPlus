@@ -201,9 +201,9 @@ require __DIR__ . '/includes/header.php';
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
             <input type="hidden" name="scheme_id" value="<?= $id ?>">
 
-            <label>Attach to
-                <select name="row_key">
-                    <option value="">Whole scheme</option>
+            <label>Attach to <span class="field-hint">— hold Ctrl / Cmd to pick several</span>
+                <select name="row_key[]" multiple size="6">
+                    <option value="" selected>Whole scheme</option>
                     <?php foreach ($rows as $row): ?>
                         <?php $k = sprintf('w%dl%d', (int) ($row['week'] ?? 0), (int) ($row['lesson'] ?? 0)); ?>
                         <option value="<?= $k ?>">Week <?= (int) ($row['week'] ?? 0) ?> · Lesson <?= (int) ($row['lesson'] ?? 0) ?><?= ($row['sub_strand'] ?? '') !== '' ? ' — ' . htmlspecialchars((string) $row['sub_strand']) : '' ?></option>
@@ -218,12 +218,12 @@ require __DIR__ . '/includes/header.php';
                 <label class="radio"><input type="radio" name="kind" value="pdf"> PDF file</label>
             </fieldset>
 
-            <label>Label
-                <input type="text" name="label" maxlength="190" required placeholder="e.g. Area model demo">
+            <label>Label <span class="field-hint">— optional; used for every link you paste</span>
+                <input type="text" name="label" maxlength="190" placeholder="e.g. Area model demo">
             </label>
 
-            <label data-resource-field="url">Link
-                <input type="url" name="url" placeholder="https://…">
+            <label data-resource-field="url">Links <span class="field-hint">— one per line</span>
+                <textarea name="url" rows="3" placeholder="https://…&#10;https://…"></textarea>
             </label>
 
             <label data-resource-field="file" hidden>PDF file (10 MB max)
