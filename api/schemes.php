@@ -1,5 +1,5 @@
 <?php
-/** JSON API: list, fetch, save and delete schemes of work.
+/** JSON API: list, fetch, save, edit and delete schemes of work.
  *  GET  /api/schemes.php                    -> list (newest first)
  *  GET  /api/schemes.php?id=1               -> one scheme with full payload
  *  POST /api/schemes.php  { "id": 1 }       -> delete
@@ -7,6 +7,10 @@
  *                            "lessons_per_week", "start_week", "scheme" }
  *                                            -> persist a generate-scheme.php draft
  *                                               (possibly teacher-edited); returns saved_id
+ *  POST /api/schemes.php  { "action": "rename", "id": 1, "title": "..." }
+ *  POST /api/schemes.php  { "action": "update", "id": 1, "scheme": {...} }
+ *                                            -> overwrite an already-saved scheme's
+ *                                               content with teacher edits
  */
 
 declare(strict_types=1);
@@ -186,6 +190,36 @@ try {
             }
 
             echo json_encode(['success' => true, 'title' => $title]);
+            exit;
+        }
+
+        if (($input['action'] ?? '') === 'update') {
+            $check = $pdo->prepare('SELECT 1 FROM schemes WHERE id = ? AND user_id = ?');
+            $check->execute([$id, $userId]);
+            if (!$check->fetchColumn()) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => 'Scheme not found.']);
+                exit;
+            }
+
+            $rows = sanitize_scheme_rows($input['scheme']['rows'] ?? null);
+            if ($rows === []) {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'error' => 'The scheme needs at least one lesson.']);
+                exit;
+            }
+
+            $scheme = [
+                'key_inquiry_questions' => sanitize_string_list($input['scheme']['key_inquiry_questions'] ?? null),
+                'rows' => $rows,
+                'citations' => sanitize_string_list($input['scheme']['citations'] ?? null),
+            ];
+            $status = scheme_classify_status($rows, $scheme['citations']);
+
+            $stmt = $pdo->prepare('UPDATE schemes SET status = ?, payload = ? WHERE id = ? AND user_id = ?');
+            $stmt->execute([$status, json_encode($scheme), $id, $userId]);
+
+            echo json_encode(['success' => true, 'status' => $status]);
             exit;
         }
 

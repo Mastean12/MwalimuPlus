@@ -104,7 +104,8 @@ $breadcrumbs  = [
     ['label' => 'Schemes of work', 'href' => 'schemes.php'],
     ['label' => $scheme['title']],
 ];
-$pageActions  = '<button class="btn" type="button" data-rename-scheme="' . $id . '">Rename</button>'
+$pageActions  = (!$isUnknown && $payload !== null ? '<button class="btn" type="button" id="scheme-edit-btn">Edit</button>' : '')
+    . '<button class="btn" type="button" data-rename-scheme="' . $id . '">Rename</button>'
     . '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
     . '<a class="btn" href="schemes.php">Back to schemes</a>';
 require __DIR__ . '/includes/header.php';
@@ -137,6 +138,7 @@ require __DIR__ . '/includes/header.php';
         <p class="citations">Sources: <?= htmlspecialchars(implode(', ', array_map('strval', $citations))) ?></p>
     <?php endif; ?>
 
+    <div id="scheme-view">
     <?php foreach ($weeks as $weekNumber => $weekRows): ?>
         <section class="panel scheme-week">
             <h2>Week <?= (int) $weekNumber ?></h2>
@@ -182,6 +184,8 @@ require __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
         </section>
     <?php endforeach; ?>
+    </div>
+    <div id="scheme-edit-container" hidden></div>
 
     <section class="panel" id="materials">
         <h2>Learning materials</h2>
@@ -240,6 +244,15 @@ require __DIR__ . '/includes/header.php';
     <a class="btn" href="schemes.php">Back to schemes</a>
 </div>
 
-<script>window.MWALIMU_SCHEME_ID = <?= $id ?>;</script>
+<script>
+window.MWALIMU_SCHEME_ID = <?= $id ?>;
+<?php if (!$isUnknown && $payload !== null): ?>
+window.MWALIMU_SCHEME_DATA = <?= json_encode([
+    'key_inquiry_questions' => $payload['key_inquiry_questions'] ?? [],
+    'rows' => $rows,
+    'citations' => $payload['citations'] ?? [],
+]) ?>;
+<?php endif; ?>
+</script>
 <script src="assets/js/scheme.js"></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
