@@ -99,7 +99,9 @@ $breadcrumbs  = [
     ['label' => $lesson['topic_name'], 'href' => 'topic.php?id=' . (int) $lesson['topic_id']],
     ['label' => $lesson['title']],
 ];
-$pageActions  = ($isUnknown || $payload === null ? '' : '<a class="btn btn-primary" href="present.php?id=' . $id . '">▶ Present</a>')
+$pageActions  = ($isUnknown || $payload === null ? '' :
+        '<a class="btn btn-primary" href="present.php?id=' . $id . '">▶ Present</a>'
+        . '<a class="btn" href="ask.php?lesson=' . $id . '">💬 Ask the AI</a>')
     . '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
     . '<a class="btn" href="topic.php?id=' . (int) $lesson['topic_id'] . '">Back to topic</a>';
 require __DIR__ . '/includes/header.php';

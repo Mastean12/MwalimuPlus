@@ -256,19 +256,63 @@ function claude_complete(string $system, string $userPrompt, int $maxTokens = CL
     $error = curl_error($ch);
     curl_close($ch);
 
-    if ($response === false || $status < 200 || $status >= 300) {
-        error_log('Claude API error (' . $status . '): ' . ($error ?: $response));
+    return claude_read_text($response, $status, $error, $maxTokens);
+}
+
+/**
+ * Multi-turn variant: sends a full messages array (each {role, content}) so a
+ * conversation can be continued. Returns the assistant's text, or null.
+ */
+function claude_chat(array $messages, string $system, int $maxTokens = CLAUDE_MAX_TOKENS): ?string
+{
+    $key = claude_api_key();
+    if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
         return null;
     }
 
-    $decoded = json_decode($response, true);
+    $body = json_encode([
+        'model' => CLAUDE_MODEL,
+        'max_tokens' => $maxTokens,
+        'system' => $system,
+        'messages' => $messages,
+    ]);
+
+    $ch = curl_init(CLAUDE_API_URL);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_TIMEOUT => CLAUDE_TIMEOUT_SECONDS,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'x-api-key: ' . $key,
+            'anthropic-version: 2023-06-01',
+        ],
+    ]);
+
+    $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    return claude_read_text($response, $status, $error, $maxTokens);
+}
+
+/** Pulls the first assistant text block out of an Anthropic API response. */
+function claude_read_text($response, int $status, string $error, int $maxTokens): ?string
+{
+    if ($response === false || $status < 200 || $status >= 300) {
+        error_log('Claude API error (' . $status . '): ' . ($error ?: (string) $response));
+        return null;
+    }
+
+    $decoded = json_decode((string) $response, true);
     if (!is_array($decoded)) {
         error_log('Claude API returned non-JSON: ' . substr((string) $response, 0, 500));
         return null;
     }
 
-    // A safety classifier can decline the request (HTTP 200, stop_reason
-    // "refusal") — there is no usable lesson text in that case.
+    // A safety classifier can decline the request (HTTP 200, stop_reason "refusal").
     if (($decoded['stop_reason'] ?? '') === 'refusal') {
         error_log('Claude declined the request: ' . json_encode($decoded['stop_details'] ?? null));
         return null;
@@ -278,8 +322,8 @@ function claude_complete(string $system, string $userPrompt, int $maxTokens = CL
         error_log('Claude hit max_tokens (' . $maxTokens . ') — output likely truncated.');
     }
 
-    // claude-opus-5 runs adaptive thinking by default, so content[] can lead
-    // with a "thinking" block. Take the first real text block, not content[0].
+    // Opus runs adaptive thinking by default, so content[] can lead with a
+    // "thinking" block. Take the first real text block, not content[0].
     foreach ($decoded['content'] ?? [] as $block) {
         if (($block['type'] ?? '') === 'text' && isset($block['text']) && is_string($block['text'])) {
             return $block['text'];
