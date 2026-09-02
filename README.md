@@ -98,6 +98,16 @@ The exact URL depends on how your local server maps folders to domains.
 3. Open a subject, then a topic, and use **Generate a lesson plan**.
 4. The generated lesson is saved and rendered on a printable page (Print / Save as PDF).
 
+### Schemes of work
+
+**Schemes of work** in the sidebar generates a full KICD CBC scheme-of-work grid
+(Week / Lesson / Sub-strand / outcomes / experiences / resources / assessment /
+reference) for a subject's strand, grounded only in the strand design on the
+server. Pick a subject, term, and lessons-per-week; each row cites the design
+page it came from, and an unsupported strand returns a Sijui message rather than
+invented rows. The saved scheme has its own printable page, and each row links
+back to the subject's topic list to generate the matching lesson plan.
+
 ### API
 
 The endpoints require a logged-in session cookie. Full contract for `POST /api/generate-lesson.php`:

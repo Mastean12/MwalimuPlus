@@ -58,6 +58,24 @@ CREATE TABLE IF NOT EXISTS lessons (
   CONSTRAINT fk_lessons_topic FOREIGN KEY (topic_id) REFERENCES topics (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Teacher-generated schemes of work (rows live in payload JSON)
+CREATE TABLE IF NOT EXISTS schemes (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  term TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  lessons_per_week TINYINT UNSIGNED NOT NULL DEFAULT 4,
+  start_week TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  status ENUM('SUPPORTED','NEEDS_VERIFICATION','UNKNOWN') NOT NULL DEFAULT 'SUPPORTED',
+  payload JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_schemes_user (user_id),
+  CONSTRAINT fk_schemes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
+  CONSTRAINT fk_schemes_subject FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Single-use password reset tokens (only the hash is stored)
 CREATE TABLE IF NOT EXISTS password_resets (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,

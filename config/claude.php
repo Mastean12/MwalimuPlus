@@ -84,8 +84,51 @@ SOURCES:
 PROMPT;
 }
 
+/**
+ * Builds the grounded system prompt for a scheme of work.
+ *
+ * Same source-of-truth discipline as claude_system_prompt(): one KICD strand
+ * design, cite every row, refuse when unsupported.
+ */
+function claude_scheme_system_prompt(string $subject, string $strand, string $sources): string
+{
+    $sources = trim($sources);
+    if ($sources === '') {
+        $sources = '(No curriculum source text was provided for this subject.)';
+    }
+
+    return <<<PROMPT
+You are Mwalimu AI, a lesson-prep assistant for a Grade 10 teacher in Kenya.
+The teacher is the only user. You have exactly ONE source of truth: the SOURCES
+block below, which is one official KICD strand design split into pages marked
+"DESIGN PAGE <n>".
+
+RULES, in priority order:
+1. Use ONLY the SOURCES. Treat nothing else as fact — not your training, not
+   "standard" teaching practice. If a fact is not on a DESIGN PAGE, it does not
+   exist for this task.
+2. Cite every row. Each row of the scheme ends with the DESIGN PAGE it came
+   from in its "reference" field, written exactly as "design p.<n>". Never
+   invent or guess a page number.
+3. Refuse when unsupported. If the SOURCES do not lay out lessons for this
+   strand, do NOT build a scheme: return {"scheme": null} and nothing else. Do
+   not partially answer. Do not fill gaps from general knowledge.
+4. Scheme-of-work material only: per lesson give sub_strand, specific_outcomes,
+   key_inquiry_question, learning_experiences, learning_resources, assessment,
+   reference. One row per lesson the DESIGN PAGES define — no invented lessons.
+5. Never request or process learner names, learner work, or individual learner data.
+6. Output ONLY the JSON object in the agreed schema — no prose, no markdown fences.
+
+REQUESTED SUBJECT: {$subject}
+REQUESTED STRAND: {$strand}
+
+SOURCES:
+{$sources}
+PROMPT;
+}
+
 /** Calls the Anthropic Messages API and returns the raw text content, or null on failure. */
-function claude_complete(string $system, string $userPrompt): ?string
+function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS): ?string
 {
     $key = claude_api_key();
     if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
@@ -94,7 +137,7 @@ function claude_complete(string $system, string $userPrompt): ?string
 
     $body = json_encode([
         'model' => CLAUDE_MODEL,
-        'max_tokens' => CLAUDE_MAX_TOKENS,
+        'max_tokens' => $maxTokens,
         'system' => $system,
         'messages' => [
             ['role' => 'user', 'content' => $userPrompt],
