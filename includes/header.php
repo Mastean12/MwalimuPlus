@@ -11,6 +11,8 @@
  *   $pageSubtitle string  muted line under the heading
  *   $pageIcon     string  emoji shown in the header block tile
  *   $pageActions  string  raw HTML for the top-right actions (buttons/links)
+ *   $publicHeader bool    render a bare topbar (brand + Log in) with no sidebar,
+ *                         for pages reachable without a session; ignored if $showHeader is set
  */
 
 declare(strict_types=1);
@@ -99,6 +101,15 @@ $navItems = [
                     <div class="page-head-actions"><?= $pageActions ?></div>
                 <?php endif; ?>
             </div>
+<?php elseif (!empty($publicHeader)): ?>
+<header class="topbar topbar-public">
+    <a class="brand" href="browse.php">Mwalimu<span>Plus</span></a>
+    <div class="topbar-right">
+        <a class="btn btn-primary" href="login.php">Log in</a>
+    </div>
+</header>
+<main class="container">
+    <?php render_flash(); ?>
 <?php else: ?>
 <main class="container">
     <?php render_flash(); ?>

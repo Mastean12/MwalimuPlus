@@ -22,16 +22,3 @@ function current_user_name(): string
 {
     return $_SESSION['user_name'] ?? 'Teacher';
 }
-
-/** Renders a one-shot flash message if one is pending. */
-function render_flash(): void
-{
-    $flash = take_flash();
-    if ($flash === null) {
-        return;
-    }
-    $kind = in_array($flash['kind'], ['error', 'success', 'info'], true) ? $flash['kind'] : 'info';
-    echo '<div class="alert alert-' . $kind . '" role="status">'
-        . htmlspecialchars((string) $flash['message'])
-        . '</div>';
-}

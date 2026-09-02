@@ -167,6 +167,7 @@ p { margin: .35rem 0; }
     color: var(--ink);
 }
 .nav-logout:hover { border-color: var(--green-600); text-decoration: none; }
+.topbar-public .btn { margin: 0; }
 
 /* Content wrapper */
 .content {
@@ -510,6 +511,7 @@ body.modal-open { overflow: hidden; }
 .badge-supported { background: var(--green-50); color: var(--green-900); }
 .badge-needs_verification { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-line); }
 .badge-unknown { background: #fbe9e7; color: #8c2f22; }
+.badge-scheduled { background: var(--tint-blue); color: #274a6d; margin-inline-start: .5rem; }
 
 /* Alerts & disclosure */
 .alert { padding: .7rem .9rem; border-radius: 8px; margin: .75rem 0; font-size: .95rem; }
@@ -576,6 +578,27 @@ textarea { resize: vertical; }
 .topic-list li { padding: .6rem 0; border-bottom: 1px solid var(--line); }
 .topic-list li:last-child { border-bottom: 0; }
 .topic-list a { font-weight: 600; }
+.topic-list a.active { color: var(--green-900); }
+
+/* Public browse pages */
+.browse-layout {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 1.25rem;
+    align-items: start;
+}
+.browse-sidebar { margin: 0; position: sticky; top: 1.5rem; }
+.browse-pager {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: 1.25rem;
+}
+.browse-pager .btn { margin: 0; }
+@media (max-width: 780px) {
+    .browse-layout { grid-template-columns: 1fr; }
+    .browse-sidebar { position: static; }
+}
 
 /* Lesson body */
 .prose { white-space: normal; }

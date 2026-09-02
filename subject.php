@@ -29,6 +29,27 @@ $stmt = $pdo->prepare(
 $stmt->execute([$id]);
 $topics = $stmt->fetchAll();
 
+// Topics this teacher has already scheduled, from their saved schemes of work
+// for this subject. Matched by name against each scheme row's sub_strand —
+// schemes don't store a topic_id, only the AI-generated sub_strand text.
+$schemeStmt = $pdo->prepare(
+    "SELECT term, payload FROM schemes WHERE user_id = ? AND subject_id = ? AND status <> 'UNKNOWN'"
+);
+$schemeStmt->execute([(int) $_SESSION['user_id'], $id]);
+
+$scheduledTerms = [];
+foreach ($schemeStmt->fetchAll() as $scheme) {
+    $schemePayload = $scheme['payload'] !== null ? json_decode($scheme['payload'], true) : null;
+    $schemeRows = is_array($schemePayload['rows'] ?? null) ? $schemePayload['rows'] : [];
+    foreach ($schemeRows as $row) {
+        $subStrand = trim((string) ($row['sub_strand'] ?? ''));
+        if ($subStrand === '') {
+            continue;
+        }
+        $scheduledTerms[mb_strtolower($subStrand)][(int) $scheme['term']] = true;
+    }
+}
+
 $pageTitle    = $subject['name'];
 $activeNav    = 'subjects';
 $showHeader   = true;
@@ -46,10 +67,15 @@ require __DIR__ . '/includes/header.php';
     <?php if ($topics): ?>
         <ul class="topic-list">
             <?php foreach ($topics as $topic): ?>
+                <?php $terms = array_keys($scheduledTerms[mb_strtolower(trim($topic['name']))] ?? []); ?>
+                <?php sort($terms); ?>
                 <li>
                     <a href="topic.php?id=<?= (int) $topic['id'] ?>">
                         <?= htmlspecialchars($topic['name']) ?>
                     </a>
+                    <?php if ($terms): ?>
+                        <span class="badge badge-scheduled">Scheduled · Term <?= htmlspecialchars(implode(', ', $terms)) ?></span>
+                    <?php endif; ?>
                 </li>
             <?php endforeach; ?>
         </ul>

@@ -119,6 +119,8 @@ $pageTitle = 'Sign in';
 
             <button type="submit" class="btn btn-primary btn-block">Sign in</button>
         </form>
+
+        <p class="auth-switch"><a href="browse.php">Browse public lessons without signing in</a></p>
     </main>
 
 </div>
