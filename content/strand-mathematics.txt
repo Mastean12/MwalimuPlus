@@ -1,0 +1,120 @@
+KICD COMPETENCY-BASED CURRICULUM — KENYA
+GRADE 10 MATHEMATICS — STRAND DESIGN (DEMO CORPUS)
+Source: Kenya Institute of Curriculum Development (KICD), adapted for demonstration.
+This file is a condensed, illustrative extract used to ground Mwalimu AI. Page numbers
+refer to the design pages in this corpus only.
+
+================================================================================
+STRAND 4: QUADRATIC EQUATIONS AND EXPRESSIONS
+================================================================================
+
+DESIGN PAGE 12 — STRAND OVERVIEW
+Quadratic expressions and equations form the foundation for later work in
+functions, coordinate geometry, and rates of change. Learners at Grade 10 are
+expected to move from linear to quadratic relationships and to interpret what
+solutions mean in real-life situations.
+By the end of this strand, the learner should be able to:
+  a) expand and factorise quadratic expressions;
+  b) solve quadratic equations by factorisation, completing the square, and the
+     quadratic formula;
+  c) form and solve quadratic equations from worded problems;
+  d) interpret the solutions of a quadratic equation graphically.
+Time allocation: 40-minute lessons. Suggested total for the strand: 8 lessons.
+Key inquiry questions: "When is a quadratic equation the right model for a
+problem?", "What does it mean when a quadratic equation has no real solutions?"
+
+DESIGN PAGE 13 — LESSON 1: EXPANDING AND FACTORISING QUADRATIC EXPRESSIONS
+Sub-strand: Algebra.
+Specific outcomes: by the end of the lesson, the learner should be able to
+expand products of two linear expressions such as (x + 3)(x - 2), identify a
+quadratic expression ax^2 + bx + c, and factorise simple quadratics with
+integer roots.
+Suggested learning experiences: learners expand brackets using the distributive
+law; a double-sided number-line or area model (rectangle with side lengths
+(x + a) and (x + b)) is recommended to make factorisation visual.
+Suggested resources: chalkboard, chalk, graph paper, printed area cards.
+Assessment: oral questions and a quick-check exercise of 5 factorisation items.
+Misconception to watch: learners often expand (x + a)(x + b) and forget the
+middle term, writing x^2 + ab. Emphasise the four products (FOIL) and the area
+model.
+
+DESIGN PAGE 14 — LESSON 2: SOLVING BY FACTORISATION
+Prerequisite: Lesson 1 (factorising quadratic expressions).
+Specific outcomes: solve quadratic equations of the form ax^2 + bx + c = 0 with
+a = 1 by factorisation and state the solution set.
+Key point: the zero-product property — if p · q = 0 then p = 0 or q = 0.
+Suggested learning experiences: learners solve x^2 - 5x + 6 = 0 by writing
+(x - 2)(x - 3) = 0 and reading off x = 2 or x = 3; link each root to where the
+corresponding graph crosses the x-axis.
+Suggested resources: chalkboard, chalk, graph paper.
+Assessment: quick-check items such as x^2 - 9 = 0 and x^2 - 4x = 0.
+Misconception to watch: learners divide both sides by x when x is a factor
+(x^2 - 4x = 0), losing the root x = 0. Remind them never to divide by a variable
+that could be zero; factorise instead.
+
+DESIGN PAGE 15 — LESSON 3: COMPLETING THE SQUARE
+Prerequisite: Lessons 1-2; squaring and square roots.
+Specific outcomes: solve quadratic equations by completing the square, including
+equations with irrational solutions, and express answers in surd form where
+appropriate.
+Suggested learning experiences: start from (x + p)^2 = x^2 + 2px + p^2; show
+that x^2 + 6x + 2 = 0 becomes (x + 3)^2 = 7, hence x = -3 +- sqrt(7).
+Suggested resources: chalkboard, chalk, algebra tiles where available.
+Assessment: solve x^2 + 4x - 1 = 0 by completing the square.
+Misconception to watch: learners forget to balance the equation when adding the
+constant term (p^2) to both sides, or misplace the sign of the constant in the
+final bracket.
+
+DESIGN PAGE 16 — LESSON 4: THE QUADRATIC FORMULA
+Prerequisite: completing the square.
+Specific outcomes: derive and use the quadratic formula x = (-b +- sqrt(b^2 - 4ac)) / 2a
+for a quadratic equation ax^2 + bx + c = 0, and use the discriminant b^2 - 4ac
+to describe the nature of the roots (two real, one repeated, or no real roots).
+Suggested learning experiences: learners apply the formula to equations that do
+not factorise easily, e.g. 2x^2 - 3x - 5 = 0; discuss what the discriminant
+tells them before they compute the roots.
+Suggested resources: chalkboard, chalk, scientific calculators (optional).
+Assessment: classify 3 equations by discriminant, then solve 2 by formula.
+Misconception to watch: learners mis-substitute the sign of b, especially when
+b is negative, and forget that the formula applies only when the equation is in
+standard form ax^2 + bx + c = 0 with all terms on one side.
+
+DESIGN PAGE 17 — LESSON 5: WORDED PROBLEMS AND APPLICATIONS
+Prerequisite: Lessons 1-4.
+Specific outcomes: form a quadratic equation from a worded problem, solve it,
+and interpret both the mathematical and the real-life meaning of the solutions.
+Suggested learning experiences: use the classic product-and-sum problem (two
+numbers whose product is 12 and sum is 7) and an area problem: a rectangular
+plot whose length is 3 m more than its width has area 40 m^2 — find the
+dimensions. Reject solutions that are not sensible in the context (a negative
+length).
+Suggested resources: chalkboard, chalk, measuring tape for a practical task.
+Assessment: one worded problem solved and interpreted in writing.
+Misconception to watch: learners accept negative or fractional answers without
+checking them against the story of the problem.
+
+DESIGN PAGE 18 — LESSON 6: GRAPHICAL SOLUTION AND REVIEW
+Prerequisite: Lessons 1-5.
+Specific outcomes: sketch the graph of y = ax^2 + bx + c, read the x-intercepts
+as solutions of ax^2 + bx + c = 0, and connect the discriminant to the number of
+x-intercepts.
+Suggested learning experiences: plot y = x^2 - 5x + 6 and confirm the roots read
+from the graph match factorisation; discuss what a graph that never touches the
+x-axis means for the equation.
+Suggested resources: graph paper, ruler, chalkboard.
+Assessment: strand quick check covering one item from each of Lessons 1-6.
+Misconception to watch: learners confuse the turning point of the graph with the
+roots of the equation. The roots are where the curve crosses the x-axis.
+
+================================================================================
+CROSS-CUTTING NOTES (DESIGN PAGE 19)
+================================================================================
+Differentiation: provide extra practice on factorisation for learners who need
+it and extension tasks (deriving the formula) for faster learners.
+Inclusive education: use concrete area models and allow pair work.
+Linkages: quadratic functions are revisited in Grade 11 coordinate geometry and
+in the physics topic of projectile motion.
+Documents and offices to check for out-of-source queries: the KICD office for
+the full Grade 10 Mathematics design, the Kenya National Examinations Council
+(KNEC) for assessment specifications, and the Ministry of Education for
+approved textbooks.

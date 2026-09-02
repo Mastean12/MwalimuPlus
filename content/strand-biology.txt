@@ -1,0 +1,93 @@
+KICD COMPETENCY-BASED CURRICULUM — KENYA
+GRADE 10 BIOLOGY — STRAND DESIGN (DEMO CORPUS)
+Source: Kenya Institute of Curriculum Development (KICD), adapted for demonstration.
+This file is a condensed, illustrative extract used to ground Mwalimu AI. Page
+numbers refer to the design pages in this corpus only.
+
+================================================================================
+STRAND 2: CELLULAR RESPIRATION
+================================================================================
+
+DESIGN PAGE 20 — STRAND OVERVIEW
+Cellular respiration is the process by which cells release energy from glucose.
+Grade 10 learners build on the Grade 9 introduction to cells and energy, and
+move to the chemical details of respiration and its importance to living
+organisms.
+By the end of this strand, the learner should be able to:
+  a) state the word and symbol equation for aerobic respiration;
+  b) describe the role of mitochondria in energy release;
+  c) compare aerobic and anaerobic respiration in humans and in
+     micro-organisms;
+  d) relate respiration rate to exercise and explain the oxygen debt.
+Time allocation: 40-minute lessons. Suggested total for the strand: 6 lessons.
+Key inquiry question: "Where does the energy in our food actually come from?"
+
+DESIGN PAGE 21 — LESSON 1: RELEASING ENERGY FROM FOOD
+Sub-strand: Life processes.
+Specific outcomes: state that glucose is the main respiratory substrate, write
+the word equation for aerobic respiration (glucose + oxygen -> carbon dioxide +
+water + energy), and identify where respiration happens in the cell
+(mitochondria).
+Suggested learning experiences: learners compare burning food (demonstration by
+the teacher) with respiration, and label a diagram of a cell showing
+mitochondria.
+Suggested resources: chalkboard, chalk, chart of the cell, small food samples.
+Assessment: oral questions and a labelling exercise.
+Misconception to watch: learners think respiration is the same as breathing.
+Distinguish breathing (gas exchange in the lungs) from respiration (energy
+release in cells).
+
+DESIGN PAGE 22 — LESSON 2: AEROBIC RESPIRATION
+Prerequisite: Lesson 1.
+Specific outcomes: write the balanced symbol equation for aerobic respiration
+C6H12O6 + 6O2 -> 6CO2 + 6H2O + energy (about 2 900 kJ per mole of glucose), and
+explain the role of mitochondria as the site of aerobic respiration.
+Suggested learning experiences: learners use molecular models or cards to
+balance the equation and count atoms on both sides.
+Suggested resources: chalkboard, chalk, atom cards or models.
+Assessment: balance the equation and explain the role of mitochondria in one
+short paragraph.
+Misconception to watch: learners omit the energy term or mis-balance the carbon
+dioxide. Balancing by atom-counting on both sides is the recommended check.
+
+DESIGN PAGE 23 — LESSON 3: ANAEROBIC RESPIRATION
+Prerequisite: Lesson 2.
+Specific outcomes: describe anaerobic respiration in humans (glucose -> lactic
+acid + energy, no oxygen) and in yeast (glucose -> ethanol + carbon dioxide +
+energy), and state where each occurs.
+Suggested learning experiences: the classic experiment with yeast in warm
+sugared water producing bubbles of carbon dioxide; relate human anaerobic
+respiration to vigorous exercise.
+Suggested resources: yeast, sugar, warm water, test tubes, balloon.
+Assessment: table comparing aerobic and anaerobic respiration (site, reactants,
+products, energy yield).
+Misconception to watch: learners believe anaerobic respiration produces no
+energy at all. Clarify that it releases far less energy per glucose molecule,
+not zero.
+
+DESIGN PAGE 24 — LESSON 4: RESPIRATION AND EXERCISE
+Prerequisite: Lesson 3.
+Specific outcomes: explain why breathing rate and heart rate increase during
+exercise, define oxygen debt as the extra oxygen needed after exercise to break
+down lactic acid, and describe recovery.
+Suggested learning experiences: learners measure their own pulse and breathing
+rate before, during, and after light exercise; results are graphed and
+discussed.
+Suggested resources: stopwatch, graph paper, chalkboard.
+Assessment: interpret a simple graph of breathing rate during and after
+exercise.
+Misconception to watch: learners think lactic acid is removed immediately.
+Explain that the oxygen debt is repaid during recovery as lactic acid is broken
+down (and some is oxidised) after exercise stops.
+
+================================================================================
+CROSS-CUTTING NOTES (DESIGN PAGE 25)
+================================================================================
+Differentiation: provide sentence starters for the word equation and extension
+on the energy released per gram of substrate.
+Inclusive education: allow demonstration observations and pair discussion.
+Linkages: respiration links to Grade 11 nutrition and to the chemistry of
+carbon compounds.
+Documents and offices to check for out-of-source queries: the KICD office for
+the full Grade 10 Biology design, KNEC for assessment specifications, and the
+Ministry of Education for approved textbooks.

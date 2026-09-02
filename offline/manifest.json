@@ -1,0 +1,11 @@
+{
+  "name": "MwalimuPlus",
+  "short_name": "MwalimuPlus",
+  "description": "Curriculum-grounded, offline-first AI lesson prep for Kenyan Grade 10 teachers.",
+  "start_url": "../dashboard.php",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#f6f8f6",
+  "theme_color": "#1f6f43",
+  "icons": []
+}
