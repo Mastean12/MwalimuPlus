@@ -29,20 +29,18 @@ $stmt = $pdo->prepare(
 $stmt->execute([$id]);
 $topics = $stmt->fetchAll();
 
-$pageTitle = $subject['name'];
-$activeNav = 'dashboard';
-$showHeader = true;
+$pageTitle    = $subject['name'];
+$activeNav    = 'subjects';
+$showHeader   = true;
+$pageIcon     = '📚';
+$pageHeading  = $subject['name'];
+$pageSubtitle = $subject['code'] . ' · ' . $subject['grade_level'] . ' · Strand: ' . $subject['strand'];
+$breadcrumbs  = [
+    ['label' => 'Subjects', 'href' => 'dashboard.php#subjects'],
+    ['label' => $subject['name']],
+];
 require __DIR__ . '/includes/header.php';
 ?>
-<nav class="breadcrumbs">
-    <a href="dashboard.php">Dashboard</a>
-    <span>/</span>
-    <span><?= htmlspecialchars($subject['name']) ?></span>
-</nav>
-
-<h1><?= htmlspecialchars($subject['name']) ?> <span class="subject-code"><?= htmlspecialchars($subject['code']) ?></span></h1>
-<p class="lead"><?= htmlspecialchars($subject['grade_level']) ?> · Strand: <?= htmlspecialchars($subject['strand']) ?></p>
-
 <section class="panel">
     <h2>Topics</h2>
     <?php if ($topics): ?>

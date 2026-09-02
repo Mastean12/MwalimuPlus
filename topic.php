@@ -35,21 +35,20 @@ $stmt = $pdo->prepare(
 $stmt->execute([$id, (int) $_SESSION['user_id']]);
 $existing = $stmt->fetchAll();
 
-$pageTitle = $topic['name'];
-$activeNav = 'dashboard';
-$showHeader = true;
+$pageTitle    = $topic['name'];
+$activeNav    = 'subjects';
+$showHeader   = true;
+$pageIcon     = '📝';
+$pageHeading  = $topic['name'];
+$pageSubtitle = 'Strand: ' . $topic['strand'];
+$breadcrumbs  = [
+    ['label' => 'Subjects', 'href' => 'dashboard.php#subjects'],
+    ['label' => $topic['subject_name'], 'href' => 'subject.php?id=' . (int) $topic['subject_id']],
+    ['label' => $topic['name']],
+];
+$pageActions  = '<a class="btn btn-primary" href="#generate-form">＋ Generate lesson</a>';
 require __DIR__ . '/includes/header.php';
 ?>
-<nav class="breadcrumbs">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="subject.php?id=<?= (int) $topic['subject_id'] ?>"><?= htmlspecialchars($topic['subject_name']) ?></a>
-    <span>/</span>
-    <span><?= htmlspecialchars($topic['name']) ?></span>
-</nav>
-
-<h1><?= htmlspecialchars($topic['name']) ?></h1>
-<p class="lead">Strand: <?= htmlspecialchars($topic['strand']) ?></p>
-
 <section class="panel">
     <h2>Generate a lesson plan</h2>
     <p class="muted">Grounded only in the KICD strand design on the server. AI output can be wrong — the teacher makes the final decision.</p>

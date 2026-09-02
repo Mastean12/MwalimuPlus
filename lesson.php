@@ -32,25 +32,25 @@ if (!$lesson) {
 $payload = $lesson['payload'] !== null ? json_decode($lesson['payload'], true) : null;
 $isUnknown = $lesson['status'] === 'UNKNOWN';
 
-$pageTitle = $lesson['title'];
-$activeNav = 'dashboard';
-$showHeader = true;
+$pageTitle    = $lesson['title'];
+$activeNav    = 'lessons';
+$showHeader   = true;
+$pageIcon     = '📄';
+$pageHeading  = $lesson['title'];
+$pageSubtitle = $lesson['subject_name'] . ' · ' . $lesson['topic_name'] . ' · ' . (int) $lesson['duration_minutes'] . ' min';
+$breadcrumbs  = [
+    ['label' => 'Recent lessons', 'href' => 'dashboard.php#recent'],
+    ['label' => $lesson['subject_name'], 'href' => 'subject.php?id=' . (int) $lesson['subject_id']],
+    ['label' => $lesson['topic_name'], 'href' => 'topic.php?id=' . (int) $lesson['topic_id']],
+    ['label' => $lesson['title']],
+];
+$pageActions  = '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
+    . '<a class="btn" href="topic.php?id=' . (int) $lesson['topic_id'] . '">Back to topic</a>';
 require __DIR__ . '/includes/header.php';
 ?>
-<nav class="breadcrumbs">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="subject.php?id=<?= (int) $lesson['subject_id'] ?>"><?= htmlspecialchars($lesson['subject_name']) ?></a>
-    <a href="topic.php?id=<?= (int) $lesson['topic_id'] ?>"><?= htmlspecialchars($lesson['topic_name']) ?></a>
-    <span>/</span>
-    <span><?= htmlspecialchars($lesson['title']) ?></span>
-</nav>
-
-<h1><?= htmlspecialchars($lesson['title']) ?></h1>
-<p class="lead">
-    <?= htmlspecialchars($lesson['subject_name']) ?> · <?= htmlspecialchars($lesson['topic_name']) ?> ·
-    <?= (int) $lesson['duration_minutes'] ?> min
+<p>
+    <span class="badge badge-<?= strtolower($lesson['status']) ?>"><?= htmlspecialchars($lesson['status']) ?></span>
 </p>
-<p><span class="badge badge-<?= strtolower($lesson['status']) ?>"><?= htmlspecialchars($lesson['status']) ?></span></p>
 <p class="disclosure">This is an AI assistant. It can be wrong. The teacher makes the final decision.</p>
 
 <?php if ($isUnknown || $payload === null): ?>
