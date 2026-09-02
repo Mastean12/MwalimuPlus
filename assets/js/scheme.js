@@ -273,7 +273,7 @@
     }
     var urlField = form.querySelector('[data-resource-field="url"]');
     var fileField = form.querySelector('[data-resource-field="file"]');
-    var urlInput = urlField ? urlField.querySelector('input') : null;
+    var urlInput = urlField ? urlField.querySelector('input, textarea') : null;
     var fileInput = fileField ? fileField.querySelector('input') : null;
 
     function sync() {

@@ -470,6 +470,25 @@ body.modal-open { overflow: hidden; }
     font-weight: 500;
 }
 .add-resource .radio input { width: auto; margin: 0; }
+.add-resource select[multiple] {
+    width: 100%;
+    margin-top: .3rem;
+    padding: .3rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    background: #fff;
+}
+.add-resource textarea {
+    width: 100%;
+    margin-top: .3rem;
+    padding: .5rem .7rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    resize: vertical;
+}
+.add-resource .field-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
 
 /* Badges */
 .badge {
