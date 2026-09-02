@@ -37,6 +37,17 @@ function ensure_database(): void
     }
 }
 
+/** True if $column exists on $table in the current database (used by migrations below). */
+function column_exists(PDO $pdo, string $table, string $column): bool
+{
+    $stmt = $pdo->prepare(
+        'SELECT 1 FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+    $stmt->execute([$table, $column]);
+    return (bool) $stmt->fetchColumn();
+}
+
 /** Ensures every table exists. Safe to call on every request. */
 function ensure_schema(PDO $pdo): void
 {
@@ -122,6 +133,34 @@ function ensure_schema(PDO $pdo): void
             CONSTRAINT fk_schemes_subject FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    // --- Migrations below: run on every connect. MySQL's ALTER TABLE has no
+    // portable "IF NOT EXISTS" for ADD COLUMN/KEY, so check first / catch-and-ignore. ---
+
+    // lessons.scheme_id: links a lesson generated from scheme.php's "Generate lesson
+    // plan" row action back to the scheme (and row) it came from.
+    if (!column_exists($pdo, 'lessons', 'scheme_id')) {
+        $pdo->exec('ALTER TABLE lessons ADD COLUMN scheme_id INT UNSIGNED NULL AFTER topic_id');
+    }
+    try {
+        $pdo->exec('ALTER TABLE lessons ADD KEY idx_lessons_scheme (scheme_id)');
+    } catch (PDOException $e) {
+        // Key already exists.
+    }
+    try {
+        $pdo->exec(
+            'ALTER TABLE lessons ADD CONSTRAINT fk_lessons_scheme
+                FOREIGN KEY (scheme_id) REFERENCES schemes (id) ON DELETE SET NULL'
+        );
+    } catch (PDOException $e) {
+        // Constraint already exists.
+    }
+
+    // topics.source_text: teacher-pasted curriculum source for a custom topic added
+    // via the curriculum admin UI (as opposed to source_file, the bundled KICD corpus).
+    if (!column_exists($pdo, 'topics', 'source_text')) {
+        $pdo->exec('ALTER TABLE topics ADD COLUMN source_text MEDIUMTEXT NULL AFTER source_file');
+    }
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS scheme_resources (

@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS topics (
   name VARCHAR(190) NOT NULL,
   strand VARCHAR(190) NOT NULL DEFAULT '',
   source_file VARCHAR(255) NOT NULL DEFAULT '',
+  source_text MEDIUMTEXT NULL,
   PRIMARY KEY (id),
   KEY idx_topics_subject (subject_id),
   CONSTRAINT fk_topics_subject FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS lessons (
   user_id INT UNSIGNED NULL,
   subject_id INT UNSIGNED NOT NULL,
   topic_id INT UNSIGNED NOT NULL,
+  scheme_id INT UNSIGNED NULL,
   title VARCHAR(190) NOT NULL,
   status ENUM('SUPPORTED','NEEDS_VERIFICATION','UNKNOWN') NOT NULL DEFAULT 'SUPPORTED',
   duration_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 40,
@@ -54,9 +56,11 @@ CREATE TABLE IF NOT EXISTS lessons (
   PRIMARY KEY (id),
   KEY idx_lessons_user (user_id),
   KEY idx_lessons_topic (topic_id),
+  KEY idx_lessons_scheme (scheme_id),
   CONSTRAINT fk_lessons_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
   CONSTRAINT fk_lessons_topic FOREIGN KEY (topic_id) REFERENCES topics (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- fk_lessons_scheme is added below, after `schemes` exists (lessons is created first).
 
 -- Teacher-generated schemes of work (rows live in payload JSON)
 CREATE TABLE IF NOT EXISTS schemes (
@@ -75,6 +79,9 @@ CREATE TABLE IF NOT EXISTS schemes (
   CONSTRAINT fk_schemes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
   CONSTRAINT fk_schemes_subject FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE lessons ADD CONSTRAINT fk_lessons_scheme
+  FOREIGN KEY (scheme_id) REFERENCES schemes (id) ON DELETE SET NULL;
 
 -- Teacher-added learning materials attached to a scheme (scheme-level or per row)
 CREATE TABLE IF NOT EXISTS scheme_resources (
