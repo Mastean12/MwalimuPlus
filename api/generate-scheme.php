@@ -103,35 +103,49 @@ function read_request(): array
     ];
 }
 
-/** Resolves a subject's strand label and its strand source file (via any topic that carries one). */
+/**
+ * Resolves a subject's strand label and the curriculum source text for a scheme
+ * covering it — every topic's source, combined. Most subjects' topics all point
+ * at the same bundled KICD file (deduped here so it isn't repeated per topic);
+ * a custom subject's topics instead carry their own teacher-pasted source_text,
+ * each of which is distinct, so all of them are included.
+ */
 function resolve_subject_source(PDO $pdo, string $subjectName): array
 {
     $stmt = $pdo->prepare('SELECT id, strand FROM subjects WHERE name = ?');
     $stmt->execute([$subjectName]);
     $subject = $stmt->fetch();
     if (!$subject) {
-        return ['subject_id' => 0, 'strand' => '', 'source_file' => null];
+        return ['subject_id' => 0, 'strand' => '', 'sources' => ''];
     }
 
-    $stmt = $pdo->prepare(
-        "SELECT source_file FROM topics
-          WHERE subject_id = ? AND source_file <> ''
-          LIMIT 1"
-    );
+    $stmt = $pdo->prepare('SELECT source_file, source_text FROM topics WHERE subject_id = ?');
     $stmt->execute([(int) $subject['id']]);
-    $sourceFile = $stmt->fetchColumn();
+
+    $seenFiles = [];
+    $chunks = [];
+    foreach ($stmt->fetchAll() as $topic) {
+        if ($topic['source_file'] !== '') {
+            if (!isset($seenFiles[$topic['source_file']])) {
+                $seenFiles[$topic['source_file']] = true;
+                $chunks[] = load_strand_source($topic['source_file']);
+            }
+        } elseif (trim((string) ($topic['source_text'] ?? '')) !== '') {
+            $chunks[] = (string) $topic['source_text'];
+        }
+    }
 
     return [
         'subject_id' => (int) $subject['id'],
         'strand' => (string) $subject['strand'],
-        'source_file' => $sourceFile !== false && $sourceFile !== '' ? (string) $sourceFile : null,
+        'sources' => implode("\n\n", array_filter($chunks, static fn ($c) => trim($c) !== '')),
     ];
 }
 
 $request = read_request();
 $pdo = db();
 $resolved = resolve_subject_source($pdo, $request['subject']);
-$sources = $resolved['source_file'] !== null ? load_strand_source($resolved['source_file']) : '';
+$sources = $resolved['sources'];
 
 // Out-of-source (no corpus at all): answer with sijui, never invent a scheme.
 if ($resolved['subject_id'] === 0 || trim($sources) === '') {
