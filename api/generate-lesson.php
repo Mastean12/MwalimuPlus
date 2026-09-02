@@ -218,12 +218,9 @@ if ($raw === null) {
     exit;
 }
 
-// Strip markdown fences if the model wraps the JSON.
-$raw = preg_replace('/^```(?:json)?\s*/i', '', trim($raw));
-$raw = preg_replace('/```\s*$/', '', $raw);
-
-$decoded = json_decode($raw, true);
+$decoded = claude_extract_json($raw);
 if (!is_array($decoded) || !array_key_exists('lesson', $decoded)) {
+    error_log('generate-lesson: unparseable model reply: ' . substr((string) $raw, 0, 1000));
     http_response_code(502);
     echo json_encode(['success' => false, 'error' => 'The model returned an unexpected response. Please try again.']);
     exit;

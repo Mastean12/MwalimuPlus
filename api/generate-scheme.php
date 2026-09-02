@@ -219,7 +219,7 @@ if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
 }
 
 $system = claude_scheme_system_prompt($request['subject'], $resolved['strand'], $sources);
-$raw = claude_complete($system, $userPrompt, 4000);
+$raw = claude_complete($system, $userPrompt, 8000);
 
 if ($raw === null) {
     http_response_code(502);
@@ -227,12 +227,9 @@ if ($raw === null) {
     exit;
 }
 
-// Strip markdown fences if the model wraps the JSON.
-$raw = preg_replace('/^```(?:json)?\s*/i', '', trim($raw));
-$raw = preg_replace('/```\s*$/', '', $raw);
-
-$decoded = json_decode($raw, true);
+$decoded = claude_extract_json($raw);
 if (!is_array($decoded) || !array_key_exists('scheme', $decoded)) {
+    error_log('generate-scheme: unparseable model reply: ' . substr((string) $raw, 0, 1000));
     http_response_code(502);
     echo json_encode(['success' => false, 'error' => 'The model returned an unexpected response. Please try again.']);
     exit;

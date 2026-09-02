@@ -19,7 +19,11 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
  * same request shape).
  */
 const CLAUDE_MODEL = 'claude-opus-5';
-const CLAUDE_MAX_TOKENS = 2500;
+// Opus 5 runs adaptive thinking by default and those tokens count against
+// max_tokens; a full lesson/scheme JSON also runs long. Keep this generous so
+// the JSON never truncates mid-object (which reads back as an "unexpected
+// response"). Callers can still pass a smaller cap.
+const CLAUDE_MAX_TOKENS = 8000;
 
 /** cURL timeout. A grounded lesson call runs ~15-30s; give it headroom. */
 const CLAUDE_TIMEOUT_SECONDS = 120;
@@ -146,6 +150,36 @@ function scheme_classify_status(array $rows, $citations): string
     return 'SUPPORTED';
 }
 
+/**
+ * Parses the model's reply into an array, tolerating markdown fences and any
+ * prose the model puts before or after the JSON object. Returns null if no
+ * JSON object can be recovered.
+ */
+function claude_extract_json(?string $raw): ?array
+{
+    if ($raw === null) {
+        return null;
+    }
+    $text = trim($raw);
+    $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
+    $text = preg_replace('/\s*```$/', '', $text);
+
+    $decoded = json_decode($text, true);
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+
+    // Fall back to the outermost { ... } span (handles leading/trailing prose,
+    // and a truncated tail if the object is otherwise intact).
+    $start = strpos($text, '{');
+    $end = strrpos($text, '}');
+    if ($start === false || $end === false || $end <= $start) {
+        return null;
+    }
+    $decoded = json_decode(substr($text, $start, $end - $start + 1), true);
+    return is_array($decoded) ? $decoded : null;
+}
+
 /** Calls the Anthropic Messages API and returns the raw text content, or null on failure. */
 function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS): ?string
 {
@@ -199,6 +233,10 @@ function claude_complete(string $system, string $userPrompt, int $maxTokens = CL
         return null;
     }
 
+    if (($decoded['stop_reason'] ?? '') === 'max_tokens') {
+        error_log('Claude hit max_tokens (' . $maxTokens . ') — output likely truncated.');
+    }
+
     // claude-opus-5 runs adaptive thinking by default, so content[] can lead
     // with a "thinking" block. Take the first real text block, not content[0].
     foreach ($decoded['content'] ?? [] as $block) {
@@ -207,5 +245,7 @@ function claude_complete(string $system, string $userPrompt, int $maxTokens = CL
         }
     }
 
+    error_log('Claude returned no text block. content types: '
+        . implode(',', array_map(static fn ($b) => $b['type'] ?? '?', $decoded['content'] ?? [])));
     return null;
 }
