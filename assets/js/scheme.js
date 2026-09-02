@@ -273,18 +273,19 @@
     }
     var urlField = form.querySelector('[data-resource-field="url"]');
     var fileField = form.querySelector('[data-resource-field="file"]');
-    var urlInput = urlField ? urlField.querySelector('input, textarea') : null;
+    var firstUrl = urlField ? urlField.querySelector('input[name="url[]"]') : null;
     var fileInput = fileField ? fileField.querySelector('input') : null;
+    var addLink = form.querySelector('[data-add-link]');
+    var linkFields = form.querySelector('[data-link-fields]');
+    var canAddLinks = addLink && linkFields && firstUrl;
 
     function sync() {
         var checked = form.querySelector('input[name="kind"]:checked');
         var isPdf = checked && checked.value === 'pdf';
         if (urlField) { urlField.hidden = isPdf; }
         if (fileField) { fileField.hidden = !isPdf; }
-        if (urlInput) {
-            urlInput.required = !isPdf;
-            if (isPdf) { urlInput.value = ''; }
-        }
+        if (firstUrl) { firstUrl.required = !isPdf; }
+        if (canAddLinks) { addLink.hidden = isPdf; }
         if (fileInput) {
             fileInput.required = isPdf;
             if (!isPdf) { fileInput.value = ''; }
@@ -294,6 +295,18 @@
     form.querySelectorAll('input[name="kind"]').forEach(function (radio) {
         radio.addEventListener('change', sync);
     });
+
+    // "+ Add another link" — clone the first link input.
+    if (canAddLinks) {
+        addLink.addEventListener('click', function () {
+            var input = firstUrl.cloneNode(true);
+            input.value = '';
+            input.required = false;
+            linkFields.appendChild(input);
+            input.focus();
+        });
+    }
+
     sync();
 })();
 

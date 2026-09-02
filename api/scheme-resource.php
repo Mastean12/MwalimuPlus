@@ -13,7 +13,7 @@
  *     row_key[]  one or more of '' (whole scheme) / 'w{week}l{lesson}' grid rows
  *     kind       youtube | link | pdf
  *     label      optional; when blank it is derived per link/file
- *     url        youtube/link: one or more links, one per line
+ *     url[]      youtube/link: one or more link fields (newlines also split)
  *     file       pdf: a single file (<= 10 MB, application/pdf)
  *
  * A resource is created for every (selected row x link) pair.
@@ -176,8 +176,16 @@ if ($kind === 'pdf') {
     $original = preg_replace('/[^\w.\- ]+/u', '_', (string) $file['name']) ?: 'material.pdf';
     $targets[] = ['scheme-resources/' . $stored, clip(trim($original), 190), (int) $file['size']];
 } else {
+    // Accept one or more link inputs (url[]) and/or newline-pasted blocks.
+    $lines = [];
+    foreach ((array) ($_POST['url'] ?? []) as $chunk) {
+        foreach (preg_split('/\R/', (string) $chunk) ?: [] as $line) {
+            $lines[] = $line;
+        }
+    }
+
     $seen = [];
-    foreach (preg_split('/\R/', (string) ($_POST['url'] ?? '')) ?: [] as $line) {
+    foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '' || isset($seen[$line]) || !filter_var($line, FILTER_VALIDATE_URL)) {
             continue;
@@ -190,7 +198,7 @@ if ($kind === 'pdf') {
         $targets[] = [clip($line, 600), '', 0];
     }
     if ($targets === []) {
-        back('error', 'Enter at least one valid http(s) link (one per line).');
+        back('error', 'Enter at least one valid http(s) link.');
     }
 }
 

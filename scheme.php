@@ -222,13 +222,18 @@ require __DIR__ . '/includes/header.php';
                 <label class="radio"><input type="radio" name="kind" value="pdf"> PDF file</label>
             </fieldset>
 
-            <label>Label <span class="field-hint">— optional; used for every link you paste</span>
+            <label>Label <span class="field-hint">— optional; used for every link you add</span>
                 <input type="text" name="label" maxlength="190" placeholder="e.g. Area model demo">
             </label>
 
-            <label data-resource-field="url">Links <span class="field-hint">— one per line</span>
-                <textarea name="url" rows="3" placeholder="https://…&#10;https://…"></textarea>
-            </label>
+            <div data-resource-field="url">
+                <span class="add-resource-label">Links</span>
+                <div data-link-fields>
+                    <input type="url" name="url[]" placeholder="https://…">
+                    <input type="url" name="url[]" placeholder="https://…">
+                </div>
+                <button type="button" class="btn btn-small" data-add-link hidden>+ Add another link</button>
+            </div>
 
             <label data-resource-field="file" hidden>PDF file (10 MB max)
                 <input type="file" name="file" accept="application/pdf">
