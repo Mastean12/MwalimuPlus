@@ -134,6 +134,19 @@ CREATE TABLE IF NOT EXISTS lesson_study_sets (
   CONSTRAINT fk_study_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Teacher-edited slide deck for present.php (one per lesson; absent = auto-built)
+CREATE TABLE IF NOT EXISTS lesson_presentations (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  lesson_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  payload JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_pres_lesson (lesson_id),
+  CONSTRAINT fk_pres_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE,
+  CONSTRAINT fk_pres_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Single-use password reset tokens (only the hash is stored)
 CREATE TABLE IF NOT EXISTS password_resets (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,

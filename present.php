@@ -1,7 +1,8 @@
 <?php
 /**
  * Full-screen slide view of a saved lesson — for projecting in class.
- * One section per slide, keyboard / click navigation, Esc to return.
+ * Auto-builds one slide per section; the teacher can edit / reorder / hide
+ * slides and save the deck (stored in lesson_presentations).
  */
 
 declare(strict_types=1);
@@ -52,22 +53,57 @@ $SECTIONS = [
     'teacher_notes' => 'Teacher notes',
 ];
 
-/** Renders a section's value as slide HTML. */
-function slide_value($value, bool $mono = false): string
+/** A payload value as an array of text lines. */
+function value_lines($value): array
 {
     if (is_array($value)) {
-        $items = array_filter(array_map('strval', $value), static fn ($v) => trim($v) !== '');
-        if ($items === []) {
-            return '';
-        }
-        return '<ul>' . implode('', array_map(
-            static fn ($v) => '<li>' . htmlspecialchars($v) . '</li>',
-            $items
-        )) . '</ul>';
+        return array_values(array_filter(array_map(
+            static fn ($v) => trim(is_array($v) ? json_encode($v) : (string) $v),
+            $value
+        ), static fn ($v) => $v !== ''));
     }
-    $text = htmlspecialchars((string) $value);
-    return $mono ? '<pre>' . $text . '</pre>' : '<p>' . nl2br($text) . '</p>';
+    $text = trim((string) $value);
+    return $text === '' ? [] : preg_split('/\R/', $text);
 }
+
+// Auto-built deck: title slide, then each non-empty section.
+$auto = [];
+$auto[] = [
+    'title' => (string) $lesson['title'],
+    'lines' => [
+        $lesson['subject_name'] . ' · ' . $lesson['topic_name'],
+        (int) $lesson['duration_minutes'] . ' minutes',
+    ],
+    'mono' => false,
+    'section' => '',
+    'hidden' => false,
+];
+foreach ($SECTIONS as $key => $label) {
+    if (empty($payload[$key])) {
+        continue;
+    }
+    $auto[] = [
+        'title' => $label,
+        'lines' => value_lines($payload[$key]),
+        'mono' => $key === 'board_plan',
+        'section' => $key,
+        'hidden' => false,
+    ];
+}
+
+// A saved deck, if the teacher edited one, wins.
+$saved = null;
+$pstmt = $pdo->prepare('SELECT payload FROM lesson_presentations WHERE lesson_id = ?');
+$pstmt->execute([$id]);
+$prow = $pstmt->fetch();
+if ($prow && $prow['payload'] !== null) {
+    $decoded = json_decode($prow['payload'], true);
+    if (is_array($decoded['slides'] ?? null) && $decoded['slides'] !== []) {
+        $saved = $decoded['slides'];
+    }
+}
+$slides = $saved ?? $auto;
+$isCustom = $saved !== null;
 
 /** Media block for a section (images inline, other links listed). */
 function slide_media(array $items): string
@@ -95,21 +131,28 @@ function slide_media(array $items): string
     return $html . '</div>';
 }
 
-// Build the slide list: title slide, then each non-empty section.
-$slides = [];
-$slides[] = '<div class="slide-kicker">' . htmlspecialchars($lesson['subject_name']) . ' · '
-    . htmlspecialchars($lesson['topic_name']) . '</div>'
-    . '<h1>' . htmlspecialchars($lesson['title']) . '</h1>'
-    . '<p class="slide-sub">' . (int) $lesson['duration_minutes'] . ' minutes</p>'
-    . slide_media($mediaBySection[''] ?? []);
-
-foreach ($SECTIONS as $key => $label) {
-    if (empty($payload[$key])) {
-        continue;
+/** Renders one slide's body (title comes from the caller). */
+function slide_body(array $slide, array $mediaBySection): string
+{
+    $lines = array_values(array_filter(array_map('strval', $slide['lines'] ?? []), static fn ($l) => trim($l) !== ''));
+    if (!empty($slide['mono'])) {
+        $body = '<pre>' . htmlspecialchars(implode("\n", $lines)) . '</pre>';
+    } elseif (count($lines) > 1) {
+        $body = '<ul>' . implode('', array_map(
+            static fn ($l) => '<li>' . htmlspecialchars($l) . '</li>',
+            $lines
+        )) . '</ul>';
+    } else {
+        $body = '<p>' . htmlspecialchars($lines[0] ?? '') . '</p>';
     }
-    $slides[] = '<h2>' . htmlspecialchars($label) . '</h2>'
-        . slide_value($payload[$key], $key === 'board_plan')
-        . slide_media($mediaBySection[$key] ?? []);
+    return $body . slide_media($mediaBySection[$slide['section'] ?? ''] ?? []);
+}
+
+$visibleCount = 0;
+foreach ($slides as $s) {
+    if (empty($s['hidden'])) {
+        $visibleCount++;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -120,7 +163,7 @@ foreach ($SECTIONS as $key => $label) {
     <title><?= htmlspecialchars($lesson['title']) ?> · Present</title>
     <meta name="theme-color" content="#12452c">
     <style>
-        :root { --green: #1f6f43; --ink: #10241a; --muted: #5c6b62; }
+        :root { --green: #1f6f43; --ink: #10241a; --muted: #5c6b62; --line: #dfe7e1; }
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; }
         body {
@@ -128,6 +171,7 @@ foreach ($SECTIONS as $key => $label) {
             background: #f4f7f4; color: var(--ink);
             display: flex; flex-direction: column;
         }
+        [hidden] { display: none !important; }
         .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4vmin; }
         .slide {
             width: min(1100px, 92vw); max-height: 84vh; overflow-y: auto;
@@ -144,64 +188,205 @@ foreach ($SECTIONS as $key => $label) {
             font-size: clamp(.95rem, 1.9vw, 1.3rem); line-height: 1.6;
             background: #f4f7f4; border-radius: 10px; padding: 1em; overflow-x: auto; white-space: pre-wrap;
         }
-        .slide-kicker { text-transform: uppercase; letter-spacing: .08em; font-size: .9rem; color: var(--muted); }
-        .slide-sub { color: var(--muted); }
         .slide-media { margin-top: 1.5em; display: flex; flex-wrap: wrap; gap: 1em; align-items: flex-start; }
-        .slide-media img { max-width: 100%; max-height: 40vh; border-radius: 10px; border: 1px solid #dfe7e1; }
+        .slide-media img { max-width: 100%; max-height: 40vh; border-radius: 10px; border: 1px solid var(--line); }
         .slide-links { width: 100%; }
         .slide-links a { color: var(--green); }
         .bar {
             display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-            padding: .6rem 1rem; background: #fff; border-top: 1px solid #dfe7e1;
+            padding: .6rem 1rem; background: #fff; border-top: 1px solid var(--line); flex-wrap: wrap;
         }
         .bar button, .bar a {
-            font: inherit; border: 1px solid #dfe7e1; background: #fff; color: var(--ink);
+            font: inherit; border: 1px solid var(--line); background: #fff; color: var(--ink);
             border-radius: 8px; padding: .45rem .9rem; cursor: pointer; text-decoration: none;
         }
         .bar button:disabled { opacity: .4; cursor: default; }
+        .bar .primary { background: var(--green); color: #fff; border-color: var(--green); }
         .count { color: var(--muted); font-variant-numeric: tabular-nums; }
-        @media print { .bar { display: none; } .slide { box-shadow: none; max-height: none; } }
+
+        /* Edit mode */
+        body.editing .stage { display: block; padding: 3vmin; }
+        body.editing .slide {
+            width: min(900px, 94vw); max-height: none; margin: 0 auto 1rem;
+            display: block !important;
+        }
+        body.editing .slide[hidden] { display: block !important; opacity: .5; }
+        .edit-tools { display: none; gap: .4rem; margin-bottom: .6rem; align-items: center; flex-wrap: wrap; }
+        body.editing .edit-tools { display: flex; }
+        .edit-tools button, .edit-tools label {
+            font: inherit; font-size: .85rem; border: 1px solid var(--line); background: #fff;
+            border-radius: 6px; padding: .25rem .6rem; cursor: pointer;
+        }
+        .edit-title, .edit-lines {
+            display: none; width: 100%; font: inherit; border: 1px solid var(--line);
+            border-radius: 8px; padding: .5rem .7rem;
+        }
+        body.editing .edit-title, body.editing .edit-lines { display: block; }
+        body.editing .slide-view { display: none; }
+        .edit-title { font-size: 1.3rem; font-weight: 700; margin-bottom: .5rem; }
+        .edit-lines { min-height: 7rem; font-size: 1rem; line-height: 1.5; resize: vertical; }
+
+        @media print {
+            .bar, .edit-tools { display: none; }
+            .slide { box-shadow: none; max-height: none; display: block !important; page-break-after: always; }
+        }
     </style>
 </head>
-<body>
+<body data-lesson-id="<?= $id ?>">
     <div class="stage">
-        <?php foreach ($slides as $i => $html): ?>
-            <article class="slide" data-slide<?= $i === 0 ? '' : ' hidden' ?>><?= $html ?></article>
+        <?php foreach ($slides as $i => $s): ?>
+            <article class="slide" data-slide
+                     data-mono="<?= !empty($s['mono']) ? '1' : '0' ?>"
+                     data-section="<?= htmlspecialchars((string) ($s['section'] ?? '')) ?>"
+                     <?= !empty($s['hidden']) ? 'data-hidden hidden' : '' ?>
+                     <?= $i === 0 ? '' : 'hidden' ?>>
+                <div class="edit-tools">
+                    <button type="button" data-move="-1" title="Move up">↑</button>
+                    <button type="button" data-move="1" title="Move down">↓</button>
+                    <label><input type="checkbox" data-hide <?= !empty($s['hidden']) ? 'checked' : '' ?>> Hide</label>
+                </div>
+                <div class="slide-view">
+                    <?php if (($s['section'] ?? '') === ''): ?>
+                        <h1><?= htmlspecialchars((string) $s['title']) ?></h1>
+                    <?php else: ?>
+                        <h2><?= htmlspecialchars((string) $s['title']) ?></h2>
+                    <?php endif; ?>
+                    <?= slide_body($s, $mediaBySection) ?>
+                </div>
+                <input type="text" class="edit-title" value="<?= htmlspecialchars((string) $s['title']) ?>">
+                <textarea class="edit-lines" rows="6"><?= htmlspecialchars(implode("\n", array_map('strval', $s['lines'] ?? []))) ?></textarea>
+            </article>
         <?php endforeach; ?>
     </div>
+
     <div class="bar">
-        <a href="lesson.php?id=<?= $id ?>">Exit</a>
-        <span class="count"><span id="cur">1</span> / <?= count($slides) ?></span>
         <span>
+            <a href="lesson.php?id=<?= $id ?>">Exit</a>
+            <button type="button" id="edit-toggle">Edit slides</button>
+        </span>
+        <span class="count" data-live-mode>
+            <span id="cur">1</span> / <span id="total"><?= max(1, $visibleCount) ?></span>
+        </span>
+        <span data-live-mode>
             <button type="button" id="prev" disabled>◀ Prev</button>
-            <button type="button" id="next"<?= count($slides) < 2 ? ' disabled' : '' ?>>Next ▶</button>
+            <button type="button" id="next"<?= $visibleCount < 2 ? ' disabled' : '' ?>>Next ▶</button>
+        </span>
+        <span data-edit-mode hidden>
+            <?php if ($isCustom): ?><button type="button" id="reset">Reset to auto</button><?php endif; ?>
+            <button type="button" id="cancel">Cancel</button>
+            <button type="button" class="primary" id="save">Save deck</button>
         </span>
     </div>
+
     <script>
-        (function () {
-            var slides = Array.prototype.slice.call(document.querySelectorAll('[data-slide]'));
-            var cur = 0;
-            var curEl = document.getElementById('cur');
-            var prev = document.getElementById('prev');
-            var next = document.getElementById('next');
+    (function () {
+        var body = document.body;
+        var lessonId = body.getAttribute('data-lesson-id');
+        var stage = document.querySelector('.stage');
+        var cur = 0;
+        var curEl = document.getElementById('cur');
+        var totalEl = document.getElementById('total');
+        var prev = document.getElementById('prev');
+        var next = document.getElementById('next');
 
-            function show(n) {
-                cur = Math.max(0, Math.min(slides.length - 1, n));
-                slides.forEach(function (s, i) { s.hidden = i !== cur; });
-                curEl.textContent = cur + 1;
-                prev.disabled = cur === 0;
-                next.disabled = cur === slides.length - 1;
-                slides[cur].scrollTop = 0;
+        function slides() { return Array.prototype.slice.call(stage.querySelectorAll('[data-slide]')); }
+        function visible() { return slides().filter(function (s) { return !s.hasAttribute('data-hidden'); }); }
+
+        function show(n) {
+            var vis = visible();
+            cur = Math.max(0, Math.min(vis.length - 1, n));
+            slides().forEach(function (s) { s.hidden = true; });
+            if (vis[cur]) { vis[cur].hidden = false; vis[cur].scrollTop = 0; }
+            curEl.textContent = vis.length ? cur + 1 : 0;
+            totalEl.textContent = Math.max(1, vis.length);
+            prev.disabled = cur === 0;
+            next.disabled = cur >= vis.length - 1;
+        }
+
+        prev.addEventListener('click', function () { show(cur - 1); });
+        next.addEventListener('click', function () { show(cur + 1); });
+        document.addEventListener('keydown', function (e) {
+            if (body.classList.contains('editing')) { return; }
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(cur + 1); }
+            else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(cur - 1); }
+            else if (e.key === 'Escape') { window.location.href = 'lesson.php?id=' + lessonId; }
+        });
+
+        /* ---- Edit mode ---- */
+        var editToggle = document.getElementById('edit-toggle');
+        var saveBtn = document.getElementById('save');
+        var cancelBtn = document.getElementById('cancel');
+        var resetBtn = document.getElementById('reset');
+
+        function setEditing(on) {
+            body.classList.toggle('editing', on);
+            document.querySelectorAll('[data-live-mode]').forEach(function (el) { el.hidden = on; });
+            document.querySelectorAll('[data-edit-mode]').forEach(function (el) { el.hidden = !on; });
+            editToggle.textContent = on ? 'Editing…' : 'Edit slides';
+            if (!on) {
+                slides().forEach(function (s) { s.hidden = true; });
+                show(0);
+            } else {
+                slides().forEach(function (s) { s.hidden = false; });
             }
+        }
+        editToggle.addEventListener('click', function () { setEditing(!body.classList.contains('editing')); });
+        cancelBtn.addEventListener('click', function () { window.location.reload(); });
 
-            prev.addEventListener('click', function () { show(cur - 1); });
-            next.addEventListener('click', function () { show(cur + 1); });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(cur + 1); }
-                else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(cur - 1); }
-                else if (e.key === 'Escape') { window.location.href = 'lesson.php?id=<?= $id ?>'; }
+        stage.addEventListener('click', function (e) {
+            var moveBtn = e.target.closest('[data-move]');
+            if (moveBtn) {
+                var art = moveBtn.closest('[data-slide]');
+                var dir = parseInt(moveBtn.getAttribute('data-move'), 10);
+                if (dir < 0 && art.previousElementSibling) {
+                    art.parentNode.insertBefore(art, art.previousElementSibling);
+                } else if (dir > 0 && art.nextElementSibling) {
+                    art.parentNode.insertBefore(art.nextElementSibling, art);
+                }
+            }
+        });
+        stage.addEventListener('change', function (e) {
+            var hide = e.target.closest('[data-hide]');
+            if (hide) {
+                hide.closest('[data-slide]').toggleAttribute('data-hidden', hide.checked);
+            }
+        });
+
+        function post(payload) {
+            return fetch('api/lesson-presentation.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(function (r) { return r.json().catch(function () { return { success: false }; }); });
+        }
+
+        saveBtn.addEventListener('click', function () {
+            var deck = slides().map(function (art) {
+                return {
+                    title: art.querySelector('.edit-title').value,
+                    lines: art.querySelector('.edit-lines').value.split('\n')
+                        .map(function (s) { return s.trim(); }).filter(function (s) { return s !== ''; }),
+                    hidden: art.hasAttribute('data-hidden'),
+                    section: art.getAttribute('data-section') || '',
+                    mono: art.getAttribute('data-mono') === '1'
+                };
             });
-        })();
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+            post({ lesson_id: lessonId, slides: deck }).then(function (d) {
+                if (d && d.success) { window.location.reload(); return; }
+                saveBtn.disabled = false; saveBtn.textContent = 'Save deck';
+                window.alert((d && d.error) || 'Could not save the deck.');
+            });
+        });
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                if (!window.confirm('Discard your edits and go back to the auto-built slides?')) { return; }
+                post({ lesson_id: lessonId, action: 'reset' }).then(function () { window.location.reload(); });
+            });
+        }
+
+        show(0);
+    })();
     </script>
 </body>
 </html>

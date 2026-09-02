@@ -224,6 +224,20 @@ function ensure_schema(PDO $pdo): void
     );
 
     $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS lesson_presentations (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            lesson_id INT UNSIGNED NOT NULL,
+            user_id INT UNSIGNED NULL,
+            payload JSON NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_pres_lesson (lesson_id),
+            CONSTRAINT fk_pres_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE,
+            CONSTRAINT fk_pres_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
         "CREATE TABLE IF NOT EXISTS password_resets (
             id INT UNSIGNED NOT NULL AUTO_INCREMENT,
             user_id INT UNSIGNED NOT NULL,
