@@ -9,10 +9,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/helpers.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+secure_session_start();
 
 if (!empty($_SESSION['user_id'])) {
     header('Location: dashboard.php');

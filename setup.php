@@ -10,10 +10,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/helpers.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+secure_session_start();
 
 // Already signed in: nothing to set up.
 if (!empty($_SESSION['user_id'])) {
@@ -101,16 +98,32 @@ $pageTitle = 'Set up your account';
             <label for="email">Email</label>
             <input type="email" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autocomplete="email">
 
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+            <div class="password-field">
+                <label for="password">Password</label>
+                <div class="password-input-wrap">
+                    <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+                    <button type="button" class="password-toggle" aria-pressed="false" aria-label="Show password" data-toggle-password="password">Show</button>
+                </div>
+                <div class="strength-meter" aria-hidden="true">
+                    <span class="strength-bar" data-strength-bar></span>
+                </div>
+                <p class="field-hint" data-strength-label>At least 8 characters.</p>
+            </div>
 
-            <label for="confirm">Confirm password</label>
-            <input type="password" id="confirm" name="confirm" required minlength="8" autocomplete="new-password">
+            <div class="password-field">
+                <label for="confirm">Confirm password</label>
+                <div class="password-input-wrap">
+                    <input type="password" id="confirm" name="confirm" required minlength="8" autocomplete="new-password">
+                    <button type="button" class="password-toggle" aria-pressed="false" aria-label="Show password" data-toggle-password="confirm">Show</button>
+                </div>
+                <p class="field-hint match-hint" data-match-hint role="status"></p>
+            </div>
 
             <button type="submit" class="btn btn-primary btn-block">Create account</button>
         </form>
     </main>
 
 </div>
+<script src="assets/js/auth.js"></script>
 </body>
 </html>

@@ -6,6 +6,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/session.php';
+
 /** True when at least one user account exists in the database. */
 function app_has_users(): bool
 {

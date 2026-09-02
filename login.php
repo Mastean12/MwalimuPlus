@@ -11,10 +11,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/helpers.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+secure_session_start();
 
 // Already signed in.
 if (!empty($_SESSION['user_id'])) {
@@ -30,26 +27,38 @@ if (!app_has_users()) {
 
 $error = '';
 
+// CSRF token for the login form.
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_token'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    try {
-        $stmt = db()->prepare('SELECT id, name, password_hash FROM users WHERE email = ?');
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+    // Reject cross-site form posts.
+    if (!hash_equals($csrfToken, (string) ($_POST['csrf_token'] ?? ''))) {
+        $error = 'Your session expired. Please try again.';
+    } else {
+        try {
+            $stmt = db()->prepare('SELECT id, name, password_hash FROM users WHERE email = ?');
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password_hash'])) {
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = (int) $user['id'];
-            $_SESSION['user_name'] = $user['name'];
-            header('Location: dashboard.php');
-            exit;
+            if ($user && password_verify($password, $user['password_hash'])) {
+                session_regenerate_id(true);
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // rotate after login
+                $_SESSION['user_id'] = (int) $user['id'];
+                $_SESSION['user_name'] = $user['name'];
+                header('Location: dashboard.php');
+                exit;
+            }
+
+            $error = 'The email or password does not match.';
+        } catch (PDOException $e) {
+            $error = 'Could not sign in right now. Please try again.';
         }
-
-        $error = 'The email or password does not match. Try again, or ask your administrator to reset it.';
-    } catch (PDOException $e) {
-        $error = 'Could not sign in right now. Please try again.';
     }
 }
 
@@ -93,16 +102,26 @@ $pageTitle = 'Sign in';
         <?php endif; ?>
 
         <form method="post" action="login.php" class="auth-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+
             <label for="email">Email</label>
             <input type="email" id="email" name="email" value="<?= $emailValue ?>" required autocomplete="email" autofocus>
 
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required autocomplete="current-password">
+            <div class="password-field">
+                <label for="password">Password</label>
+                <div class="password-input-wrap">
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" aria-pressed="false" aria-label="Show password" data-toggle-password="password">Show</button>
+                </div>
+            </div>
+
+            <p class="auth-forgot"><a href="forgot.php">Forgot your password?</a></p>
 
             <button type="submit" class="btn btn-primary btn-block">Sign in</button>
         </form>
     </main>
 
 </div>
+<script src="assets/js/auth.js"></script>
 </body>
 </html>

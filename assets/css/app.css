@@ -346,6 +346,69 @@ textarea { resize: vertical; }
     margin: .3rem 0 0;
 }
 
+/* Password visibility toggle */
+.password-input-wrap {
+    position: relative;
+    margin-top: .3rem;
+}
+.password-input-wrap input {
+    margin-top: 0;
+    padding-inline-end: 4.5rem;
+}
+.password-toggle {
+    position: absolute;
+    inset-inline-end: .4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    min-height: 44px;
+    padding: 0 .9rem;
+    border: 0;
+    background: transparent;
+    color: var(--green-700);
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+}
+.password-toggle:hover { background: var(--green-50); }
+.password-toggle:focus-visible {
+    outline: 2px solid var(--green-600);
+    outline-offset: 1px;
+}
+.auth-forgot {
+    margin: .9rem 0 0;
+    font-size: .92rem;
+    text-align: end;
+}
+
+/* Password strength meter + confirm match (setup) */
+.strength-meter {
+    height: 6px;
+    border-radius: 999px;
+    background: #e4ebe6;
+    margin-top: .6rem;
+    overflow: hidden;
+}
+.strength-bar {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: #d4dcd6;
+    transition: width .2s ease, background-color .2s ease;
+}
+.strength-bar.strength-1 { width: 25%; background: var(--danger); }
+.strength-bar.strength-2 { width: 50%; background: #d9822b; }
+.strength-bar.strength-3 { width: 75%; background: var(--green-600); }
+.strength-bar.strength-4 { width: 100%; background: var(--green-700); }
+.strength-label-strength-1 { color: var(--danger); font-weight: 600; }
+.strength-label-strength-2 { color: #9a5b13; font-weight: 600; }
+.strength-label-strength-3, .strength-label-strength-4 { color: var(--green-900); font-weight: 600; }
+.match-hint { min-height: 1.2em; }
+.match-hint.match-ok { color: var(--green-700); font-weight: 600; }
+.match-hint.match-error { color: var(--danger); font-weight: 600; }
+
 /* Result area (topic.php generator) */
 #generate-result { margin-top: 1.25rem; }
 .result-success {
