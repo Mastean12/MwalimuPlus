@@ -529,3 +529,59 @@
         });
     });
 })();
+
+/* scheme.php — generate a lesson plan for a single scheme row. */
+(function () {
+    document.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-generate-lesson]');
+        if (!btn) {
+            return;
+        }
+
+        btn.disabled = true;
+        var original = btn.textContent;
+        btn.textContent = 'Generating…';
+
+        window.Mwalimu.postJSON('api/generate-lesson.php', {
+            subject: btn.getAttribute('data-subject'),
+            topic: btn.getAttribute('data-topic'),
+            strand: btn.getAttribute('data-strand'),
+            duration: 40,
+            teacher_need: btn.getAttribute('data-teacher-need') || '',
+            resources: [],
+            scheme_id: parseInt(btn.getAttribute('data-scheme-id'), 10)
+        }).then(function (data) {
+            if (!data || !data.success) {
+                btn.disabled = false;
+                btn.textContent = original;
+                window.alert((data && data.error) || 'Could not generate the lesson plan.');
+                return;
+            }
+            if (data.demo_mode) {
+                btn.disabled = false;
+                btn.textContent = original;
+                window.alert(data.message || 'Claude API key is not configured.');
+                return;
+            }
+            if (data.status === 'UNKNOWN' || !data.saved_id) {
+                btn.disabled = false;
+                btn.textContent = original;
+                window.alert(data.sijui || 'I can’t build a lesson for this from the curriculum design I have.');
+                return;
+            }
+
+            var link = document.createElement('a');
+            link.className = 'btn btn-small';
+            link.href = 'lesson.php?id=' + encodeURIComponent(data.saved_id);
+            link.textContent = 'View lesson plan';
+            var wrap = btn.closest('p');
+            if (wrap) {
+                wrap.replaceWith(link);
+            }
+        }).catch(function () {
+            btn.disabled = false;
+            btn.textContent = original;
+            window.alert('Network error — could not generate the lesson plan.');
+        });
+    });
+})();

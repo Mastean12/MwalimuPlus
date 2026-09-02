@@ -11,8 +11,13 @@
  *     "strand": "Quadratic Equations and Expressions",
  *     "duration": 40,
  *     "teacher_need": "I have never taught this topic before.",
- *     "resources": ["chalkboard", "chalk"]
+ *     "resources": ["chalkboard", "chalk"],
+ *     "scheme_id": 12
  *   }
+ *
+ * scheme_id is optional — set when generation is triggered from a scheme of
+ * work row (scheme.php's "Generate lesson plan"). It must belong to the
+ * signed-in teacher; the resulting lesson's scheme_id links back to it.
  *
  * Output follows the agreed contract:
  *   { "success": true, "disclosure": "...", "status": "SUPPORTED|NEEDS_VERIFICATION|UNKNOWN",
@@ -64,6 +69,7 @@ function read_request(): array
     $duration = isset($input['duration']) ? (int) $input['duration'] : 40;
     $teacherNeed = trim((string) ($input['teacher_need'] ?? ''));
     $resources = $input['resources'] ?? [];
+    $schemeId = isset($input['scheme_id']) ? (int) $input['scheme_id'] : null;
 
     if ($subject === '' || $topic === '') {
         http_response_code(422);
@@ -86,21 +92,39 @@ function read_request(): array
         'duration' => $duration,
         'teacher_need' => $teacherNeed,
         'resources' => $resources,
+        'scheme_id' => $schemeId,
     ];
 }
 
+/** Confirms $schemeId belongs to the signed-in teacher, or exits with an error. */
+function verify_scheme_ownership(PDO $pdo, ?int $schemeId, int $userId): void
+{
+    if ($schemeId === null) {
+        return;
+    }
+    $stmt = $pdo->prepare('SELECT 1 FROM schemes WHERE id = ? AND user_id = ?');
+    $stmt->execute([$schemeId, $userId]);
+    if (!$stmt->fetchColumn()) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Scheme not found.']);
+        exit;
+    }
+}
+
 /**
- * Locates the corpus file for this exact topic in this exact subject.
+ * Resolves the curriculum source for this exact topic in this exact subject:
+ * the bundled KICD file if the topic has one, otherwise a teacher-pasted
+ * source_text for a custom topic (added via the curriculum admin UI).
  *
  * No fuzzy fallback on purpose: if the ask isn't a topic we seeded from a strand
  * design, it is out of curriculum and must reach the Sijui path. Stretching one
  * strand file to cover topics it doesn't name is exactly the failure the
  * cite-or-Sijui rule exists to prevent.
  */
-function find_source_file(PDO $pdo, string $subjectName, string $topicName): ?string
+function find_topic_sources(PDO $pdo, string $subjectName, string $topicName): string
 {
     $stmt = $pdo->prepare(
-        'SELECT t.source_file
+        'SELECT t.source_file, t.source_text
            FROM topics t
            JOIN subjects s ON s.id = t.subject_id
           WHERE t.name = ? AND s.name = ?'
@@ -108,17 +132,19 @@ function find_source_file(PDO $pdo, string $subjectName, string $topicName): ?st
     $stmt->execute([$topicName, $subjectName]);
     $row = $stmt->fetch();
 
-    if ($row && $row['source_file'] !== '') {
-        return $row['source_file'];
+    if (!$row) {
+        return '';
     }
-
-    return null;
+    if ($row['source_file'] !== '') {
+        return load_strand_source($row['source_file']);
+    }
+    return (string) ($row['source_text'] ?? '');
 }
 
 $request = read_request();
 $pdo = db();
-$sourceFile = find_source_file($pdo, $request['subject'], $request['topic']);
-$sources = $sourceFile !== null ? load_strand_source($sourceFile) : '';
+verify_scheme_ownership($pdo, $request['scheme_id'], (int) $_SESSION['user_id']);
+$sources = find_topic_sources($pdo, $request['subject'], $request['topic']);
 
 // Out-of-source (no corpus at all): answer with sijui, never invent a lesson.
 if (trim($sources) === '') {
@@ -227,14 +253,15 @@ if (!is_array($citations) || $citations === []) {
 
 // Persist the generated lesson.
 $stmt = $pdo->prepare(
-    'INSERT INTO lessons (user_id, subject_id, topic_id, title, status, duration_minutes, payload)
+    'INSERT INTO lessons (user_id, subject_id, topic_id, scheme_id, title, status, duration_minutes, payload)
      VALUES (?, (SELECT id FROM subjects WHERE name = ? LIMIT 1),
-             (SELECT id FROM topics WHERE name = ? LIMIT 1), ?, ?, ?, ?)'
+             (SELECT id FROM topics WHERE name = ? LIMIT 1), ?, ?, ?, ?, ?)'
 );
 $stmt->execute([
     (int) $_SESSION['user_id'],
     $request['subject'],
     $request['topic'],
+    $request['scheme_id'],
     $lesson['title'] !== '' ? $lesson['title'] : $request['topic'],
     $status,
     $request['duration'],

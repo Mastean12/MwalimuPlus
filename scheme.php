@@ -50,6 +50,25 @@ foreach ($resStmt->fetchAll() as $r) {
 
 $csrf = csrf_token();
 
+// Lessons already generated from this scheme, keyed by topic_id, so each row
+// can offer "Generate lesson plan" or "View lesson plan" as appropriate.
+$lessonStmt = $pdo->prepare('SELECT id, topic_id FROM lessons WHERE scheme_id = ? AND user_id = ?');
+$lessonStmt->execute([$id, (int) $_SESSION['user_id']]);
+$lessonsByTopic = [];
+foreach ($lessonStmt->fetchAll() as $l) {
+    $lessonsByTopic[(int) $l['topic_id']] = $l;
+}
+
+// A row's sub_strand is AI-generated text; match it to a real topic by name
+// (same best-effort approach as subject.php's "Scheduled" badge) so the
+// generated lesson can be filed under the right topic_id.
+$topicStmt = $pdo->prepare('SELECT id, name FROM topics WHERE subject_id = ?');
+$topicStmt->execute([(int) $scheme['subject_id']]);
+$topicIdByName = [];
+foreach ($topicStmt->fetchAll() as $t) {
+    $topicIdByName[mb_strtolower(trim($t['name']))] = (int) $t['id'];
+}
+
 // Group lessons by week for the document-style layout, in week order.
 $weeks = [];
 foreach ($rows as $row) {
@@ -180,6 +199,22 @@ require __DIR__ . '/includes/header.php';
                         <?php endif; ?>
                     </dl>
                     <p class="citations">Reference: <?= htmlspecialchars((string) ($row['reference'] ?? '')) ?></p>
+                    <?php
+                        $rowTopicId = $topicIdByName[mb_strtolower(trim((string) ($row['sub_strand'] ?? '')))] ?? null;
+                        $rowLesson = $rowTopicId !== null ? ($lessonsByTopic[$rowTopicId] ?? null) : null;
+                    ?>
+                    <?php if ($rowLesson): ?>
+                        <p><a class="btn btn-small" href="lesson.php?id=<?= (int) $rowLesson['id'] ?>">View lesson plan</a></p>
+                    <?php else: ?>
+                        <p>
+                            <button type="button" class="btn btn-small" data-generate-lesson
+                                data-subject="<?= htmlspecialchars($scheme['subject_name']) ?>"
+                                data-topic="<?= htmlspecialchars((string) ($row['sub_strand'] ?? '')) ?>"
+                                data-strand="<?= htmlspecialchars((string) ($row['strand'] ?? $scheme['subject_name'])) ?>"
+                                data-teacher-need="<?= htmlspecialchars((string) ($row['key_inquiry_question'] ?? '')) ?>"
+                                data-scheme-id="<?= $id ?>">Generate lesson plan</button>
+                        </p>
+                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         </section>
