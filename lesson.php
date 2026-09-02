@@ -93,7 +93,8 @@ $breadcrumbs  = [
     ['label' => $lesson['topic_name'], 'href' => 'topic.php?id=' . (int) $lesson['topic_id']],
     ['label' => $lesson['title']],
 ];
-$pageActions  = '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
+$pageActions  = ($isUnknown || $payload === null ? '' : '<a class="btn btn-primary" href="present.php?id=' . $id . '">▶ Present</a>')
+    . '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
     . '<a class="btn" href="topic.php?id=' . (int) $lesson['topic_id'] . '">Back to topic</a>';
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/lesson-body.php';
