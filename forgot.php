@@ -72,7 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
                     $resetUrl = $scheme . '://' . $host . '/reset.php?token=' . urlencode($token);
 
-                    send_mail($email, 'Reset your password', password_reset_email_body($resetUrl));
+                    send_mail(
+                        $email,
+                        'Reset your password',
+                        password_reset_email_html($resetUrl),
+                        password_reset_email_text($resetUrl)
+                    );
                 }
             } catch (PDOException $e) {
                 $error = 'Could not process the request right now. Please try again.';

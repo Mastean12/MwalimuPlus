@@ -7,3 +7,6 @@ Thumbs.db
 
 # Local config secrets
 .env
+
+# Composer dependencies (regenerate with: composer install)
+/vendor/

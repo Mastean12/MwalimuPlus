@@ -105,7 +105,12 @@ try {
                     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
                     $resetUrl = $scheme . '://' . $host . '/reset.php?token=' . urlencode($token);
 
-                    send_mail($email, 'Reset your password', password_reset_email_body($resetUrl));
+                    send_mail(
+                        $email,
+                        'Reset your password',
+                        password_reset_email_html($resetUrl),
+                        password_reset_email_text($resetUrl)
+                    );
                 }
             }
 
