@@ -296,14 +296,46 @@
         radio.addEventListener('change', sync);
     });
 
-    // "+ Add another link" — clone the first link input.
+    // Repeatable link rows: "+ Add another link" adds a row, "−" removes it.
     if (canAddLinks) {
+        var makeRow = function (input) {
+            var row = document.createElement('div');
+            row.className = 'link-row';
+            row.appendChild(input); // detaches input from wherever it was
+            var minus = document.createElement('button');
+            minus.type = 'button';
+            minus.className = 'btn-link-danger link-remove';
+            minus.setAttribute('aria-label', 'Remove this link');
+            minus.title = 'Remove';
+            minus.textContent = '−';
+            row.appendChild(minus);
+            return row;
+        };
+
+        // Wrap the static inputs (kept in order — each append re-adds at the end).
+        Array.prototype.slice.call(linkFields.querySelectorAll('input[name="url[]"]'))
+            .forEach(function (input) {
+                linkFields.appendChild(makeRow(input));
+            });
+
         addLink.addEventListener('click', function () {
             var input = firstUrl.cloneNode(true);
             input.value = '';
             input.required = false;
-            linkFields.appendChild(input);
+            linkFields.appendChild(makeRow(input));
             input.focus();
+        });
+
+        linkFields.addEventListener('click', function (event) {
+            var minus = event.target.closest('.link-remove');
+            if (!minus) {
+                return;
+            }
+            if (linkFields.querySelectorAll('.link-row').length <= 1) {
+                minus.parentNode.querySelector('input').value = '';
+                return;
+            }
+            minus.parentNode.remove();
         });
     }
 

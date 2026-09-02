@@ -492,6 +492,9 @@ body.modal-open { overflow: hidden; }
 .add-resource-label { display: block; font-weight: 600; font-size: .92rem; margin: .9rem 0 .35rem; }
 .add-resource [data-link-fields] { display: grid; gap: .4rem; }
 .add-resource [data-link-fields] input { width: 100%; margin: 0; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.add-resource .link-row { display: flex; align-items: center; gap: .4rem; }
+.add-resource .link-row input { flex: 1; }
+.add-resource .link-remove { flex-shrink: 0; font-size: 1.1rem; line-height: 1; padding: .2rem .5rem; }
 .btn-small { padding: .3rem .7rem; font-size: .85rem; margin: .5rem 0 0; }
 
 /* Badges */
