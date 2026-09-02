@@ -8,6 +8,9 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../database/schema.php';
+require_once __DIR__ . '/env.php';
+
+load_env();
 
 function db(): PDO
 {
