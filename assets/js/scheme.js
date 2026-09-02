@@ -51,7 +51,7 @@
         });
     });
 
-    /* Generate a new scheme. */
+    /* Generate a new scheme -> editable preview -> explicit save. */
     var form = document.getElementById('scheme-form');
     if (!form) {
         return;
@@ -59,6 +59,137 @@
 
     var resultBox = document.getElementById('scheme-result');
     var button = document.getElementById('scheme-btn');
+    var previewBox = document.getElementById('scheme-preview');
+    var previewBody = document.getElementById('scheme-preview-body');
+    var discardBtn = document.getElementById('scheme-discard-btn');
+    var saveBtn = document.getElementById('scheme-save-btn');
+
+    var LIST_FIELDS = ['specific_outcomes', 'learning_experiences', 'learning_resources'];
+    var draftMeta = null; // { subject_id, term, lessons_per_week, start_week }
+    var draftScheme = null; // { key_inquiry_questions, rows, citations } as last generated
+
+    function field(label, name, value, isList) {
+        var val = isList ? (value || []).join('\n') : (value || '');
+        var control = isList
+            ? '<textarea class="scheme-input" data-field="' + name + '" rows="3">' + escapeHtml(val) + '</textarea>'
+            : '<input type="text" class="scheme-input" data-field="' + name + '" value="' + escapeHtml(val) + '">';
+        var hint = isList ? ' <span class="field-hint-inline">(one per line)</span>' : '';
+        return '<label>' + escapeHtml(label) + hint + control + '</label>';
+    }
+
+    function renderPreview(scheme) {
+        var rows = scheme.rows || [];
+        var weeks = {};
+        var order = [];
+        rows.forEach(function (row, index) {
+            var wk = parseInt(row.week, 10) || 0;
+            if (!weeks[wk]) {
+                weeks[wk] = [];
+                order.push(wk);
+            }
+            weeks[wk].push(index);
+        });
+        order.sort(function (a, b) { return a - b; });
+
+        var html = '<div class="panel">' +
+            field('Key inquiry questions', 'key_inquiry_questions', scheme.key_inquiry_questions, true) +
+            '</div>';
+
+        order.forEach(function (wk) {
+            html += '<section class="panel scheme-week"><h2>Week ' + wk + '</h2>';
+            weeks[wk].forEach(function (index) {
+                var row = rows[index];
+                html += '<article class="scheme-lesson" data-row-index="' + index + '">' +
+                    '<h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + '</h3>' +
+                    field('Sub-strand', 'sub_strand', row.sub_strand, false) +
+                    field('Specific learning outcomes', 'specific_outcomes', row.specific_outcomes, true) +
+                    field('Key inquiry question', 'key_inquiry_question', row.key_inquiry_question, false) +
+                    field('Learning experiences', 'learning_experiences', row.learning_experiences, true) +
+                    field('Learning resources', 'learning_resources', row.learning_resources, true) +
+                    field('Assessment methods', 'assessment', row.assessment, false) +
+                    field('Reference', 'reference', row.reference, false) +
+                    '</article>';
+            });
+            html += '</section>';
+        });
+
+        previewBody.innerHTML = html;
+        previewBox.hidden = false;
+    }
+
+    function collectEditedScheme() {
+        var rows = (draftScheme.rows || []).map(function (row) {
+            // Carry week/lesson through unchanged — only the descriptive fields are editable.
+            return {
+                week: row.week,
+                lesson: row.lesson,
+                strand: row.strand
+            };
+        });
+
+        previewBody.querySelectorAll('.scheme-lesson').forEach(function (article) {
+            var index = parseInt(article.getAttribute('data-row-index'), 10);
+            var row = rows[index];
+            if (!row) {
+                return;
+            }
+            article.querySelectorAll('.scheme-input').forEach(function (input) {
+                var name = input.getAttribute('data-field');
+                row[name] = LIST_FIELDS.indexOf(name) !== -1
+                    ? input.value.split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s !== ''; })
+                    : input.value.trim();
+            });
+        });
+
+        var kiqInput = previewBody.querySelector('[data-field="key_inquiry_questions"]');
+        var kiq = kiqInput
+            ? kiqInput.value.split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s !== ''; })
+            : (draftScheme.key_inquiry_questions || []);
+
+        return {
+            key_inquiry_questions: kiq,
+            rows: rows,
+            citations: draftScheme.citations || []
+        };
+    }
+
+    function resetPreview() {
+        previewBox.hidden = true;
+        previewBody.innerHTML = '';
+        draftMeta = null;
+        draftScheme = null;
+    }
+
+    discardBtn.addEventListener('click', resetPreview);
+
+    saveBtn.addEventListener('click', function () {
+        if (!draftMeta || !draftScheme) {
+            return;
+        }
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+
+        window.Mwalimu.postJSON('api/schemes.php', {
+            action: 'save',
+            subject_id: draftMeta.subject_id,
+            term: draftMeta.term,
+            lessons_per_week: draftMeta.lessons_per_week,
+            start_week: draftMeta.start_week,
+            scheme: collectEditedScheme()
+        }).then(function (data) {
+            if (data && data.success) {
+                window.location.href = 'scheme.php?id=' + encodeURIComponent(data.saved_id);
+                return;
+            }
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save scheme';
+            window.alert((data && data.error) || 'Could not save the scheme.');
+        }).catch(function () {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save scheme';
+            window.alert('Network error — could not save the scheme.');
+        });
+    });
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -68,12 +199,14 @@
             term: parseInt(document.getElementById('scheme-term').value, 10) || 1,
             lessons_per_week: parseInt(document.getElementById('scheme-lpw').value, 10) || 4,
             start_week: parseInt(document.getElementById('scheme-start').value, 10) || 1,
-            focus: document.getElementById('scheme-focus').value.trim()
+            focus: document.getElementById('scheme-focus').value.trim(),
+            details: document.getElementById('scheme-details').value.trim()
         };
 
         button.disabled = true;
         button.textContent = 'Generating…';
         resultBox.hidden = true;
+        resetPreview();
 
         window.Mwalimu.postJSON('api/generate-scheme.php', payload).then(function (data) {
             resultBox.hidden = false;
@@ -100,11 +233,17 @@
             resultBox.innerHTML =
                 '<div class="result-success">' +
                 '<p class="result-status">' + escapeHtml(data.status) + '</p>' +
-                '<p>Scheme saved. Opening it…</p>' +
+                '<p>Review the draft below, then save it.</p>' +
                 '</div>';
-            setTimeout(function () {
-                window.location.href = 'scheme.php?id=' + encodeURIComponent(data.saved_id);
-            }, 700);
+
+            draftMeta = {
+                subject_id: data.subject_id,
+                term: data.term,
+                lessons_per_week: data.lessons_per_week,
+                start_week: data.start_week
+            };
+            draftScheme = data.scheme;
+            renderPreview(data.scheme);
         }).catch(function () {
             resultBox.hidden = false;
             resultBox.innerHTML = '<div class="result-unknown"><p>Network error — could not reach the server.</p></div>';

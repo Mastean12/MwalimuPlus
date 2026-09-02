@@ -59,15 +59,30 @@ require __DIR__ . '/includes/header.php';
             <input type="number" id="scheme-start" value="1" min="1" max="52" step="1">
         </label>
 
-        <label>Focus (optional)
-            <textarea id="scheme-focus" rows="2"
+        <label>Focus
+            <textarea id="scheme-focus" rows="2" required
                 placeholder="e.g. spend an extra lesson on completing the square"></textarea>
+        </label>
+
+        <label>Additional details (optional)
+            <textarea id="scheme-details" rows="2"
+                placeholder="e.g. class has no graphing calculators; revising for a CAT in week 4"></textarea>
         </label>
 
         <button type="submit" class="btn btn-primary" id="scheme-btn">Generate scheme</button>
     </form>
 
     <div id="scheme-result" hidden></div>
+
+    <div id="scheme-preview" hidden>
+        <h2>Preview</h2>
+        <p class="muted">Nothing is saved yet — edit any field below, then save when it looks right.</p>
+        <div id="scheme-preview-body"></div>
+        <div class="scheme-preview-actions">
+            <button type="button" class="btn" id="scheme-discard-btn">Discard</button>
+            <button type="button" class="btn btn-primary" id="scheme-save-btn">Save scheme</button>
+        </div>
+    </div>
 </section>
 
 <section class="panel">

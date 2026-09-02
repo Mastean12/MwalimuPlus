@@ -127,6 +127,25 @@ SOURCES:
 PROMPT;
 }
 
+/**
+ * Classifies a scheme as SUPPORTED unless the corpus offered nothing to check
+ * a row against — i.e. no citations at all, no rows, or any row missing its
+ * per-lesson reference. Shared by generation and the save endpoint so a
+ * client can never claim SUPPORTED for a scheme that isn't grounded.
+ */
+function scheme_classify_status(array $rows, $citations): string
+{
+    if (!is_array($citations) || $citations === [] || $rows === []) {
+        return 'NEEDS_VERIFICATION';
+    }
+    foreach ($rows as $row) {
+        if (trim((string) ($row['reference'] ?? '')) === '') {
+            return 'NEEDS_VERIFICATION';
+        }
+    }
+    return 'SUPPORTED';
+}
+
 /** Calls the Anthropic Messages API and returns the raw text content, or null on failure. */
 function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS): ?string
 {

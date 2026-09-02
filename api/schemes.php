@@ -1,14 +1,19 @@
 <?php
-/** JSON API: list, fetch and delete schemes of work.
- *  GET  /api/schemes.php         -> list (newest first)
- *  GET  /api/schemes.php?id=1    -> one scheme with full payload
- *  POST /api/schemes.php         -> delete { "id": 1 }
+/** JSON API: list, fetch, save and delete schemes of work.
+ *  GET  /api/schemes.php                    -> list (newest first)
+ *  GET  /api/schemes.php?id=1               -> one scheme with full payload
+ *  POST /api/schemes.php  { "id": 1 }       -> delete
+ *  POST /api/schemes.php  { "action": "save", "subject_id", "term",
+ *                            "lessons_per_week", "start_week", "scheme" }
+ *                                            -> persist a generate-scheme.php draft
+ *                                               (possibly teacher-edited); returns saved_id
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/helpers.php';
+require_once __DIR__ . '/../config/claude.php';
 secure_session_start();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -21,6 +26,43 @@ if (empty($_SESSION['user_id'])) {
 
 $userId = (int) $_SESSION['user_id'];
 $method = $_SERVER['REQUEST_METHOD'];
+
+/** Coerces a value to a list of trimmed, non-empty strings. */
+function sanitize_string_list($value): array
+{
+    if (!is_array($value)) {
+        return [];
+    }
+    $items = array_map(static fn ($v) => trim((string) $v), $value);
+    return array_values(array_filter($items, static fn ($v) => $v !== ''));
+}
+
+/** Coerces a submitted (possibly teacher-edited) rows array back into the stored schema. */
+function sanitize_scheme_rows($value): array
+{
+    if (!is_array($value)) {
+        return [];
+    }
+    $rows = [];
+    foreach ($value as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $rows[] = [
+            'week' => (int) ($row['week'] ?? 0),
+            'lesson' => (int) ($row['lesson'] ?? 0),
+            'strand' => trim((string) ($row['strand'] ?? '')),
+            'sub_strand' => trim((string) ($row['sub_strand'] ?? '')),
+            'specific_outcomes' => sanitize_string_list($row['specific_outcomes'] ?? null),
+            'key_inquiry_question' => trim((string) ($row['key_inquiry_question'] ?? '')),
+            'learning_experiences' => sanitize_string_list($row['learning_experiences'] ?? null),
+            'learning_resources' => sanitize_string_list($row['learning_resources'] ?? null),
+            'assessment' => trim((string) ($row['assessment'] ?? '')),
+            'reference' => trim((string) ($row['reference'] ?? '')),
+        ];
+    }
+    return $rows;
+}
 
 try {
     $pdo = db();
@@ -64,6 +106,54 @@ try {
 
     if ($method === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
+
+        if (is_array($input) && ($input['action'] ?? '') === 'save') {
+            $subjectId = (int) ($input['subject_id'] ?? 0);
+            $stmt = $pdo->prepare('SELECT name FROM subjects WHERE id = ?');
+            $stmt->execute([$subjectId]);
+            $subjectName = $stmt->fetchColumn();
+
+            if ($subjectName === false) {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'error' => 'Unknown subject.']);
+                exit;
+            }
+
+            $term = (int) ($input['term'] ?? 1);
+            $term = ($term >= 1 && $term <= 3) ? $term : 1;
+
+            $lessonsPerWeek = (int) ($input['lessons_per_week'] ?? 4);
+            $lessonsPerWeek = ($lessonsPerWeek >= 1 && $lessonsPerWeek <= 10) ? $lessonsPerWeek : 4;
+
+            $startWeek = (int) ($input['start_week'] ?? 1);
+            $startWeek = ($startWeek >= 1 && $startWeek <= 52) ? $startWeek : 1;
+
+            $rows = sanitize_scheme_rows($input['scheme']['rows'] ?? null);
+            if ($rows === []) {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'error' => 'The scheme needs at least one lesson.']);
+                exit;
+            }
+
+            $scheme = [
+                'key_inquiry_questions' => sanitize_string_list($input['scheme']['key_inquiry_questions'] ?? null),
+                'rows' => $rows,
+                'citations' => sanitize_string_list($input['scheme']['citations'] ?? null),
+            ];
+            $status = scheme_classify_status($rows, $scheme['citations']);
+            $title = sprintf('%s scheme of work — Term %d', $subjectName, $term);
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO schemes (user_id, subject_id, title, term, lessons_per_week, start_week, status, payload)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                $userId, $subjectId, $title, $term, $lessonsPerWeek, $startWeek, $status, json_encode($scheme),
+            ]);
+
+            echo json_encode(['success' => true, 'saved_id' => (int) $pdo->lastInsertId(), 'status' => $status]);
+            exit;
+        }
 
         if (empty($input['id'])) {
             http_response_code(422);

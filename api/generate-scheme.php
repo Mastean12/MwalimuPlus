@@ -10,12 +10,19 @@
  *     "term": 1,
  *     "lessons_per_week": 4,
  *     "start_week": 1,
- *     "focus": "spend an extra lesson on completing the square"
+ *     "focus": "spend an extra lesson on completing the square",
+ *     "details": "class has no graphing calculators; revising for a CAT in week 4"
  *   }
  *
- * Output follows the same contract as generate-lesson.php:
+ * Output:
  *   { "success": true, "disclosure": "...", "status": "SUPPORTED|NEEDS_VERIFICATION|UNKNOWN",
- *     "scheme": {...}|null, "sijui": null|"...", "saved_id": 12 }
+ *     "scheme": {...}|null, "sijui": null|"...",
+ *     "subject_id": 3, "term": 1, "lessons_per_week": 4, "start_week": 1 }
+ *
+ * This only generates a draft — nothing is written to the database here. The
+ * teacher reviews/edits the draft client-side, then api/schemes.php's "save"
+ * action persists it (echoing subject_id/term/lessons_per_week/start_week
+ * back unchanged is what lets the client do that without re-deriving them).
  *
  * Grounding: the subject's KICD strand design is loaded from content/ and injected
  * into the system prompt as SOURCES. If the corpus cannot support a scheme the API
@@ -64,6 +71,13 @@ function read_request(): array
         exit;
     }
 
+    $focus = trim((string) ($input['focus'] ?? ''));
+    if ($focus === '') {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => 'focus is required.']);
+        exit;
+    }
+
     $term = isset($input['term']) ? (int) $input['term'] : 1;
     if ($term < 1 || $term > 3) {
         $term = 1;
@@ -84,7 +98,8 @@ function read_request(): array
         'term' => $term,
         'lessons_per_week' => $lessonsPerWeek,
         'start_week' => $startWeek,
-        'focus' => trim((string) ($input['focus'] ?? '')),
+        'focus' => $focus,
+        'details' => trim((string) ($input['details'] ?? '')),
     ];
 }
 
@@ -130,7 +145,7 @@ if ($resolved['subject_id'] === 0 || trim($sources) === '') {
     exit;
 }
 
-$focusLine = $request['focus'] === '' ? '(none)' : $request['focus'];
+$detailsLine = $request['details'] === '' ? '(none)' : $request['details'];
 
 $userPrompt = <<<PROMPT
 Build a Grade 10 scheme of work for this strand using ONLY the SOURCES.
@@ -140,7 +155,8 @@ Strand: {$resolved['strand']}
 Term: {$request['term']}
 Lessons per week: {$request['lessons_per_week']}
 Start numbering at week: {$request['start_week']}
-Teacher focus (optional): {$focusLine}
+Teacher focus: {$request['focus']}
+Additional details (optional): {$detailsLine}
 
 Produce one row per lesson the DESIGN PAGES define, in order. Number the lessons
 into weeks: {$request['lessons_per_week']} lessons per week, the first lesson in
@@ -224,36 +240,7 @@ if ($scheme === null) {
 
 $rows = is_array($scheme['rows'] ?? null) ? $scheme['rows'] : [];
 $citations = $scheme['citations'] ?? [];
-
-// Classify: SUPPORTED unless the corpus offered nothing to check a row against.
-$status = 'SUPPORTED';
-if (!is_array($citations) || $citations === [] || $rows === []) {
-    $status = 'NEEDS_VERIFICATION';
-} else {
-    foreach ($rows as $row) {
-        if (trim((string) ($row['reference'] ?? '')) === '') {
-            $status = 'NEEDS_VERIFICATION';
-            break;
-        }
-    }
-}
-
-$title = sprintf('%s scheme of work — Term %d', $request['subject'], $request['term']);
-
-$stmt = $pdo->prepare(
-    'INSERT INTO schemes (user_id, subject_id, title, term, lessons_per_week, start_week, status, payload)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-);
-$stmt->execute([
-    (int) $_SESSION['user_id'],
-    $resolved['subject_id'],
-    $title,
-    $request['term'],
-    $request['lessons_per_week'],
-    $request['start_week'],
-    $status,
-    json_encode($scheme),
-]);
+$status = scheme_classify_status($rows, $citations);
 
 echo json_encode([
     'success' => true,
@@ -261,5 +248,8 @@ echo json_encode([
     'status' => $status,
     'scheme' => $scheme,
     'sijui' => null,
-    'saved_id' => (int) $pdo->lastInsertId(),
+    'subject_id' => $resolved['subject_id'],
+    'term' => $request['term'],
+    'lessons_per_week' => $request['lessons_per_week'],
+    'start_week' => $request['start_week'],
 ]);

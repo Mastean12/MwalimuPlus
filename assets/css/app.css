@@ -396,20 +396,41 @@ body.modal-open { overflow: hidden; }
 .btn-link-danger:hover { text-decoration: underline; }
 .btn-link-danger:disabled { opacity: .5; cursor: default; text-decoration: none; }
 
-/* Wide scheme-of-work grid: scrolls inside its own box, never the page body */
-.table-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 1.25rem 0;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
+/* Scheme of work: grouped by week, document-style */
+.scheme-week h2 {
+    padding-bottom: .6rem;
+    border-bottom: 1px solid var(--line);
 }
-.scheme-table { min-width: 960px; margin: 0; }
-.scheme-table th, .scheme-table td { vertical-align: top; font-size: .85rem; }
-.scheme-table td:first-child, .scheme-table td:nth-child(2) { text-align: center; white-space: nowrap; }
-.scheme-table ul { margin: 0; padding-inline-start: 1.1rem; }
-.scheme-table li { margin: .15rem 0; }
-.scheme-table .col-materials { min-width: 170px; }
+.scheme-lesson {
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--line);
+}
+.scheme-lesson:first-of-type { border-top: 0; padding-top: .25rem; }
+.scheme-fields {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: .3rem 1.25rem;
+    margin: 0;
+}
+.scheme-fields dt {
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+    padding: .3rem 0;
+}
+.scheme-fields dd { margin: 0; padding: .3rem 0; }
+.scheme-fields ul { margin: 0; padding-inline-start: 1.1rem; }
+.scheme-fields li { margin: .15rem 0; }
+.scheme-reflection {
+    display: block;
+    min-height: 1.6rem;
+    border-bottom: 1px dashed var(--line);
+}
+.field-hint-inline { font-weight: 400; text-transform: none; letter-spacing: normal; color: var(--muted); font-size: .82rem; }
+.scheme-preview-actions { display: flex; gap: .5rem; margin: 1.25rem 0; }
+.scheme-preview-actions .btn { margin: 0; }
 
 /* Learning materials (teacher-added) */
 .resource-list { list-style: none; margin: .5rem 0 0; padding: 0; }
@@ -420,8 +441,7 @@ body.modal-open { overflow: hidden; }
     padding: .3rem 0;
 }
 .resource-list .resource-item + .resource-item { border-top: 1px solid var(--line); }
-.scheme-table .resource-list { margin: 0; font-size: .8rem; }
-.scheme-table .resource-item { padding: .2rem 0; }
+.scheme-fields .resource-list { margin: 0; font-size: .85rem; }
 .resource-icon { flex-shrink: 0; font-size: .9rem; }
 .resource-item a { word-break: break-word; }
 .resource-del { display: inline; margin: 0 0 0 auto; }
@@ -776,10 +796,8 @@ textarea { resize: vertical; }
     .content { max-width: none; padding: 0; }
     body { background: #fff; }
     .panel { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
-    .table-scroll { overflow: visible; border: 0; }
-    .scheme-table { min-width: 0; font-size: 10px; }
-    .scheme-table th, .scheme-table td { font-size: 10px; padding: .3rem .35rem; }
-    .add-resource, .resource-del, #materials, .col-materials { display: none; }
+    .scheme-lesson { break-inside: avoid; }
+    .add-resource, .resource-del, #materials { display: none; }
 }
 
 /* Responsive shell */
@@ -813,6 +831,8 @@ textarea { resize: vertical; }
 
 @media (max-width: 640px) {
     .content { padding: 1.1rem; }
+    .scheme-fields { grid-template-columns: 1fr; }
+    .scheme-fields dt { padding-bottom: 0; }
     .topbar { padding: .7rem 1rem; gap: .6rem; }
     .topbar-right { gap: .7rem; }
     .topbar-clock, .user-name { display: none; }

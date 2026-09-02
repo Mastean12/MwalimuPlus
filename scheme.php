@@ -50,6 +50,13 @@ foreach ($resStmt->fetchAll() as $r) {
 
 $csrf = csrf_token();
 
+// Group lessons by week for the document-style layout, in week order.
+$weeks = [];
+foreach ($rows as $row) {
+    $weeks[(int) ($row['week'] ?? 0)][] = $row;
+}
+ksort($weeks);
+
 /** Renders a scalar or a list value as an HTML fragment. */
 function scheme_cell($value): string
 {
@@ -130,58 +137,51 @@ require __DIR__ . '/includes/header.php';
         <p class="citations">Sources: <?= htmlspecialchars(implode(', ', array_map('strval', $citations))) ?></p>
     <?php endif; ?>
 
-    <?php $hasRowMaterials = $rowResources !== []; ?>
-    <div class="table-scroll">
-        <table class="table scheme-table">
-            <thead>
-                <tr>
-                    <th>Week</th>
-                    <th>Lesson</th>
-                    <th>Strand</th>
-                    <th>Sub-strand</th>
-                    <th>Specific learning outcomes</th>
-                    <th>Key inquiry question(s)</th>
-                    <th>Learning experiences</th>
-                    <th>Learning resources</th>
-                    <th>Assessment methods</th>
-                    <th>Reflection</th>
-                    <th>Reference</th>
-                    <?php if ($hasRowMaterials): ?><th class="col-materials">Materials</th><?php endif; ?>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($rows as $row): ?>
+    <?php foreach ($weeks as $weekNumber => $weekRows): ?>
+        <section class="panel scheme-week">
+            <h2>Week <?= (int) $weekNumber ?></h2>
+            <?php foreach ($weekRows as $row): ?>
                 <?php $rowKey = sprintf('w%dl%d', (int) ($row['week'] ?? 0), (int) ($row['lesson'] ?? 0)); ?>
-                <tr>
-                    <td><?= (int) ($row['week'] ?? 0) ?></td>
-                    <td><?= (int) ($row['lesson'] ?? 0) ?></td>
-                    <td><?= htmlspecialchars((string) ($row['strand'] ?? $scheme['subject_name'])) ?></td>
-                    <td>
-                        <a href="subject.php?id=<?= (int) $scheme['subject_id'] ?>#topics"><?= htmlspecialchars((string) ($row['sub_strand'] ?? '')) ?></a>
-                    </td>
-                    <td><?= scheme_cell($row['specific_outcomes'] ?? '') ?></td>
-                    <td><?= htmlspecialchars((string) ($row['key_inquiry_question'] ?? '')) ?></td>
-                    <td><?= scheme_cell($row['learning_experiences'] ?? '') ?></td>
-                    <td><?= scheme_cell($row['learning_resources'] ?? '') ?></td>
-                    <td><?= htmlspecialchars((string) ($row['assessment'] ?? '')) ?></td>
-                    <td></td>
-                    <td><?= htmlspecialchars((string) ($row['reference'] ?? '')) ?></td>
-                    <?php if ($hasRowMaterials): ?>
-                        <td class="col-materials">
-                            <?php if (!empty($rowResources[$rowKey])): ?>
+                <article class="scheme-lesson">
+                    <h3>
+                        Lesson <?= (int) ($row['lesson'] ?? 0) ?>
+                        · <a href="subject.php?id=<?= (int) $scheme['subject_id'] ?>#topics"><?= htmlspecialchars((string) ($row['sub_strand'] ?? '')) ?></a>
+                    </h3>
+                    <dl class="scheme-fields">
+                        <dt>Specific learning outcomes</dt>
+                        <dd><?= scheme_cell($row['specific_outcomes'] ?? '') ?></dd>
+
+                        <dt>Key inquiry question</dt>
+                        <dd><?= htmlspecialchars((string) ($row['key_inquiry_question'] ?? '')) ?></dd>
+
+                        <dt>Learning experiences</dt>
+                        <dd><?= scheme_cell($row['learning_experiences'] ?? '') ?></dd>
+
+                        <dt>Learning resources</dt>
+                        <dd><?= scheme_cell($row['learning_resources'] ?? '') ?></dd>
+
+                        <dt>Assessment methods</dt>
+                        <dd><?= htmlspecialchars((string) ($row['assessment'] ?? '')) ?></dd>
+
+                        <dt>Reflection</dt>
+                        <dd><span class="scheme-reflection" aria-hidden="true"></span></dd>
+
+                        <?php if (!empty($rowResources[$rowKey])): ?>
+                            <dt>Materials</dt>
+                            <dd>
                                 <ul class="resource-list">
                                     <?php foreach ($rowResources[$rowKey] as $r): ?>
                                         <?= resource_item($r, $id, $csrf) ?>
                                     <?php endforeach; ?>
                                 </ul>
-                            <?php endif; ?>
-                        </td>
-                    <?php endif; ?>
-                </tr>
+                            </dd>
+                        <?php endif; ?>
+                    </dl>
+                    <p class="citations">Reference: <?= htmlspecialchars((string) ($row['reference'] ?? '')) ?></p>
+                </article>
             <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+        </section>
+    <?php endforeach; ?>
 
     <section class="panel" id="materials">
         <h2>Learning materials</h2>
