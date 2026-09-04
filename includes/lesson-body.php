@@ -24,7 +24,7 @@ declare(strict_types=1);
     <?php endif; ?>
 
     <section class="panel">
-        <h2>Learning objectives</h2>
+        <h2>Learning objectives <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
         <?php if (!empty($payload['objectives'])): ?>
             <ul>
                 <?php foreach ($payload['objectives'] as $objective): ?>
@@ -37,7 +37,7 @@ declare(strict_types=1);
     </section>
 
     <section class="panel">
-        <h2>Prerequisites</h2>
+        <h2>Prerequisites <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
         <?php if (!empty($payload['prerequisites'])): ?>
             <ul>
                 <?php foreach ($payload['prerequisites'] as $prerequisite): ?>
@@ -51,14 +51,14 @@ declare(strict_types=1);
 
     <?php if (!empty($payload['teacher_explanation'])): ?>
         <section class="panel">
-            <h2>Teacher explanation</h2>
+            <h2>Teacher explanation <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <div class="prose"><?= nl2br(htmlspecialchars($payload['teacher_explanation'])) ?></div>
         </section>
     <?php endif; ?>
 
     <?php if (!empty($payload['examples'])): ?>
         <section class="panel">
-            <h2>Examples</h2>
+            <h2>Examples <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <?php if (is_array($payload['examples'])): ?>
                 <ol>
                     <?php foreach ($payload['examples'] as $example): ?>
@@ -73,14 +73,14 @@ declare(strict_types=1);
 
     <?php if (!empty($payload['board_plan'])): ?>
         <section class="panel">
-            <h2>Board plan</h2>
+            <h2>Board plan <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <pre class="board-plan"><?= htmlspecialchars($payload['board_plan']) ?></pre>
         </section>
     <?php endif; ?>
 
     <?php if (!empty($payload['teacher_questions'])): ?>
         <section class="panel">
-            <h2>Suggested teacher questions</h2>
+            <h2>Suggested teacher questions <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <?php if (is_array($payload['teacher_questions'])): ?>
                 <ul>
                     <?php foreach ($payload['teacher_questions'] as $question): ?>
@@ -95,7 +95,7 @@ declare(strict_types=1);
 
     <?php if (!empty($payload['common_misconceptions'])): ?>
         <section class="panel">
-            <h2>Common misconceptions</h2>
+            <h2>Common misconceptions <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <?php if (is_array($payload['common_misconceptions'])): ?>
                 <ul>
                     <?php foreach ($payload['common_misconceptions'] as $item): ?>
@@ -110,7 +110,7 @@ declare(strict_types=1);
 
     <?php if (!empty($payload['quick_check'])): ?>
         <section class="panel">
-            <h2>Quick check</h2>
+            <h2>Quick check <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <?php if (is_array($payload['quick_check'])): ?>
                 <ul>
                     <?php foreach ($payload['quick_check'] as $item): ?>
@@ -125,7 +125,7 @@ declare(strict_types=1);
 
     <?php if (!empty($payload['teacher_notes'])): ?>
         <section class="panel">
-            <h2>Teacher notes</h2>
+            <h2>Teacher notes <button type="button" class="section-listen-btn" data-listen-section title="Listen to section">🔊</button></h2>
             <div class="prose"><?= nl2br(htmlspecialchars($payload['teacher_notes'])) ?></div>
         </section>
     <?php endif; ?>

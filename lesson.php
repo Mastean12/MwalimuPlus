@@ -100,11 +100,12 @@ $breadcrumbs  = [
     ['label' => $lesson['title']],
 ];
 $pageActions  = ($isUnknown || $payload === null ? '' :
-        '<a class="btn btn-primary" href="present.php?id=' . $id . '">▶ Present</a>'
-        . '<a class="btn" href="ask.php?lesson=' . $id . '">💬 Ask the AI</a>')
-    . '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
+        '<button class="btn btn-primary" type="button" id="listen-lesson-btn" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none; color: #fff;"><span class="listen-icon">🔊</span> <span class="listen-label">Listen</span></button>'
+        . ' <a class="btn btn-primary" href="present.php?id=' . $id . '">▶ Present</a>'
+        . ' <a class="btn" href="ask.php?lesson=' . $id . '">💬 Ask the AI</a>')
+    . ' <button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
     . ' <button class="btn btn-primary" type="button" id="share-lesson-toggle" aria-expanded="false" aria-controls="share-panel">Share to parent</button>'
-    . '<a class="btn" href="topic.php?id=' . (int) $lesson['topic_id'] . '">Back to topic</a>';
+    . ' <a class="btn" href="topic.php?id=' . (int) $lesson['topic_id'] . '">Back to topic</a>';
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/lesson-body.php';
 ?>

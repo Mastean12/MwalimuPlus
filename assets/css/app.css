@@ -3233,3 +3233,379 @@ textarea { resize: vertical; }
     letter-spacing: .02em;
     text-transform: uppercase;
 }
+
+/* ---- Learning Materials & Empty State Styling ---- */
+.materials-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.material-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.material-card:hover {
+    border-color: var(--green-400, #34d399);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+.material-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.material-kind-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    width: fit-content;
+}
+
+.material-kind-badge.kind-youtube {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+.material-kind-badge.kind-link {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.material-kind-badge.kind-pdf {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.material-title-link {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.material-title-link:hover {
+    color: var(--green-600, #059669);
+    text-decoration: underline;
+}
+
+.material-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.material-action-btn {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    transition: all 0.15s ease;
+}
+
+.material-action-btn:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+}
+
+.material-del-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.25rem 0.4rem;
+    border-radius: 999px;
+    transition: all 0.15s ease;
+}
+
+.material-del-btn:hover {
+    color: var(--danger, #ef4444);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Empty State Card when No Attached Files */
+.empty-materials-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: var(--surface-2, rgba(255, 255, 255, 0.5));
+    border: 2px dashed var(--line);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s ease;
+}
+
+.empty-materials-card:hover {
+    border-color: var(--green-400, #34d399);
+}
+
+.empty-materials-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.empty-materials-card h3 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.empty-materials-card p {
+    margin: 0 0 1.25rem 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+    max-width: 440px;
+    line-height: 1.45;
+}
+
+/* Edit Mode Banner & Layout */
+.scheme-edit-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px;
+    padding: 0.9rem 1.25rem;
+    margin-bottom: 1.5rem;
+    position: sticky;
+    top: 4.5rem;
+    z-index: 20;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.scheme-edit-banner .banner-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.scheme-edit-banner .banner-icon {
+    font-size: 1.4rem;
+}
+
+.scheme-edit-banner strong {
+    font-size: 1rem;
+    color: var(--ink);
+    display: block;
+}
+
+.scheme-edit-banner p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.scheme-edit-banner .banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.scheme-edit-banner .banner-actions .btn {
+    margin: 0;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.edit-lesson-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    transition: border-color 0.2s ease;
+}
+
+.edit-lesson-card:focus-within {
+    border-color: var(--green-500, #10b981);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+}
+
+.edit-lesson-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px dashed var(--line);
+}
+
+.edit-lesson-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--ink);
+}
+
+.edit-fields-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.scheme-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    background: var(--surface);
+    color: var(--ink);
+    transition: border-color 0.15s ease;
+}
+
+.scheme-input:focus {
+    border-color: var(--green-500, #10b981);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+/* ---- Lesson Audio Player Sticky Bar ---- */
+.lesson-audio-player-bar {
+    position: sticky;
+    top: 4.5rem;
+    z-index: 25;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(99, 102, 241, 0.95));
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    animation: slideDownFade 0.25s ease-out;
+}
+
+@keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.lesson-audio-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.audio-status-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.2;
+}
+
+.audio-status-sub {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lesson-audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.audio-btn-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.audio-btn-circle:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(1.05);
+}
+
+.audio-speed-btn {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+}
+
+.section-listen-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    transition: all 0.15s ease;
+}
+
+.section-listen-btn:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: #a78bfa;
+    transform: scale(1.08);
+}
+

@@ -66,9 +66,51 @@
         });
     }
 
+    var formModal = document.getElementById('generate-lesson-form-modal');
+    var openModalBtn = document.getElementById('open-gen-form-modal-btn');
+    var closeModalBtn = document.getElementById('close-gen-form-modal');
+    var cancelModalBtn = document.getElementById('cancel-gen-form-modal');
+
+    function hideFormModal() {
+        if (formModal) {
+            formModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+    }
+
+    function showFormModal() {
+        if (formModal) {
+            formModal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    if (openModalBtn) {
+        openModalBtn.addEventListener('click', showFormModal);
+    }
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', hideFormModal);
+    }
+    if (cancelModalBtn) {
+        cancelModalBtn.addEventListener('click', hideFormModal);
+    }
+
+    var topicSelector = document.getElementById('topic-selector');
+    if (topicSelector) {
+        topicSelector.addEventListener('change', function () {
+            var opt = topicSelector.options[topicSelector.selectedIndex];
+            if (opt && opt.value) {
+                document.getElementById('subject-name').value = opt.getAttribute('data-subject') || '';
+                document.getElementById('topic-name').value = opt.getAttribute('data-topic') || '';
+                document.getElementById('strand-name').value = opt.getAttribute('data-strand') || '';
+            }
+        });
+    }
+
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         isCancelled = false;
+        hideFormModal();
 
         var resources = document.getElementById('resources').value
             .split(',')
@@ -284,3 +326,172 @@
         });
     });
 })();
+
+/* lesson.php — Listen / Text-to-Speech audio playback */
+(function () {
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    var listenMainBtn = document.getElementById('listen-lesson-btn');
+    var sectionBtns = document.querySelectorAll('[data-listen-section]');
+    if (!listenMainBtn && sectionBtns.length === 0) {
+        return;
+    }
+
+    var audioBar = null;
+    var currentSpeech = null;
+    var isPlaying = false;
+    var currentSpeed = 1.0;
+
+    function stopSpeech() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+        isPlaying = false;
+        if (audioBar) {
+            audioBar.remove();
+            audioBar = null;
+        }
+        if (listenMainBtn) {
+            var icon = listenMainBtn.querySelector('.listen-icon');
+            var label = listenMainBtn.querySelector('.listen-label');
+            if (icon) icon.textContent = '🔊';
+            if (label) label.textContent = 'Listen';
+        }
+    }
+
+    function createAudioBar(sectionTitle) {
+        if (audioBar) {
+            audioBar.remove();
+        }
+
+        audioBar = document.createElement('div');
+        audioBar.className = 'lesson-audio-player-bar';
+        audioBar.innerHTML = 
+            '<div class="lesson-audio-info">' +
+                '<div class="audio-mini-equalizer">' +
+                    '<span class="mbar"></span><span class="mbar"></span><span class="mbar"></span><span class="mbar"></span>' +
+                '</div>' +
+                '<div>' +
+                    '<div class="audio-status-title">Playing Lesson Audio</div>' +
+                    '<div class="audio-status-sub">' + escapeHtml(sectionTitle || 'Full lesson') + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="lesson-audio-controls">' +
+                '<button type="button" class="audio-speed-btn" id="audio-speed-toggle" title="Playback Speed">1.0x</button>' +
+                '<button type="button" class="audio-btn-circle" id="audio-pause-btn" title="Pause / Play">⏸️</button>' +
+                '<button type="button" class="audio-btn-circle" id="audio-stop-btn" title="Stop Audio">⏹️</button>' +
+            '</div>';
+
+        var head = document.querySelector('.page-head') || document.body.firstElementChild;
+        if (head && head.parentNode) {
+            head.parentNode.insertBefore(audioBar, head.nextSibling);
+        } else {
+            document.body.prepend(audioBar);
+        }
+
+        var pauseBtn = audioBar.querySelector('#audio-pause-btn');
+        var stopBtn = audioBar.querySelector('#audio-stop-btn');
+        var speedBtn = audioBar.querySelector('#audio-speed-toggle');
+
+        pauseBtn.addEventListener('click', function () {
+            if (!('speechSynthesis' in window)) return;
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+                pauseBtn.textContent = '⏸️';
+                audioBar.querySelector('.audio-status-title').textContent = 'Playing Lesson Audio';
+            } else if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.pause();
+                pauseBtn.textContent = '▶️';
+                audioBar.querySelector('.audio-status-title').textContent = 'Audio Paused';
+            }
+        });
+
+        stopBtn.addEventListener('click', stopSpeech);
+
+        speedBtn.addEventListener('click', function () {
+            if (currentSpeed === 1.0) currentSpeed = 1.25;
+            else if (currentSpeed === 1.25) currentSpeed = 1.5;
+            else currentSpeed = 1.0;
+            speedBtn.textContent = currentSpeed + 'x';
+        });
+    }
+
+    function speakText(text, title) {
+        if (!('speechSynthesis' in window)) {
+            window.alert('Text-to-speech audio is not supported in this browser.');
+            return;
+        }
+
+        if (isPlaying) {
+            stopSpeech();
+            return;
+        }
+
+        stopSpeech();
+        if (!text || text.trim() === '') return;
+
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = currentSpeed;
+        utterance.pitch = 1.0;
+
+        var voices = window.speechSynthesis.getVoices();
+        var enVoice = voices.find(function (v) { return v.lang.indexOf('en') === 0; });
+        if (enVoice) {
+            utterance.voice = enVoice;
+        }
+
+        utterance.onend = function () {
+            stopSpeech();
+        };
+
+        utterance.onerror = function () {
+            stopSpeech();
+        };
+
+        createAudioBar(title);
+        currentSpeech = utterance;
+        isPlaying = true;
+        if (listenMainBtn) {
+            var icon = listenMainBtn.querySelector('.listen-icon');
+            var label = listenMainBtn.querySelector('.listen-label');
+            if (icon) icon.textContent = '⏹️';
+            if (label) label.textContent = 'Stop Audio';
+        }
+        window.speechSynthesis.speak(utterance);
+    }
+
+    if (listenMainBtn) {
+        listenMainBtn.addEventListener('click', function () {
+            var heading = document.querySelector('.page-head h1');
+            var title = heading ? heading.textContent.trim() : 'Lesson';
+            var mainContent = document.querySelectorAll('section.panel');
+            var text = (heading ? heading.textContent + '. ' : '');
+            mainContent.forEach(function(sec) {
+                if (sec.id !== 'lesson-media' && sec.id !== 'study-set') {
+                    text += sec.innerText.replace('🔊', '').trim() + '. ';
+                }
+            });
+            speakText(text, title);
+        });
+    }
+
+    sectionBtns.forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var panel = btn.closest('.panel');
+            if (!panel) return;
+            var h2 = panel.querySelector('h2');
+            var title = h2 ? h2.childNodes[0].textContent.trim() : 'Section';
+            var text = panel.innerText.replace('🔊', '').trim();
+            speakText(text, title);
+        });
+    });
+})();
+

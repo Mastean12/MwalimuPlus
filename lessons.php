@@ -54,6 +54,7 @@ $stmt->execute($params);
 $lessons = $stmt->fetchAll();
 
 $subjects = $pdo->query('SELECT id, name FROM subjects ORDER BY name')->fetchAll();
+$allTopics = $pdo->query('SELECT t.id, t.subject_id, t.name, t.strand, s.name AS subject_name FROM topics t JOIN subjects s ON s.id = t.subject_id ORDER BY s.name, t.name')->fetchAll();
 $hasFilters = $subjectId !== null || $status !== '' || $q !== '';
 
 /** Current filters as a query string, with $overrides layered on top (for pager links). */
@@ -76,7 +77,101 @@ $showHeader   = true;
 $pageIcon     = '📝';
 $pageHeading  = 'Lessons';
 $pageSubtitle = $total . ' lesson' . ($total === 1 ? '' : 's') . ' generated so far.';
+$pageActions  = '<button type="button" class="btn btn-accent" id="open-gen-form-modal-btn">✨ Generate lesson</button>';
 require __DIR__ . '/includes/header.php';
+?>
+
+<!-- Generate Lesson Form Modal Pop-Up -->
+<div class="modal-backdrop" id="generate-lesson-form-modal" style="display: none;">
+    <div class="modal premium-modal" style="max-width: 520px; width: 92%;">
+        <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 0.85rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.5rem;">✨</span>
+                <div>
+                    <h2 style="margin: 0; font-size: 1.2rem;">Generate Lesson Plan</h2>
+                    <p class="muted" style="margin: 0; font-size: 0.8rem;">Grounded in KICD curriculum design</p>
+                </div>
+            </div>
+            <button type="button" class="btn-link-danger" id="close-gen-form-modal" style="font-size: 1.3rem; border: none; background: none; cursor: pointer; color: var(--muted);" aria-label="Close">✕</button>
+        </div>
+
+        <form id="generate-form" class="generate-form">
+            <input type="hidden" id="topic-name" value="">
+            <input type="hidden" id="subject-name" value="">
+            <input type="hidden" id="strand-name" value="">
+
+            <label style="font-weight: 600; margin-top: 0;">Select Topic
+                <select id="topic-selector" required style="margin-top: 0.3rem;">
+                    <option value="">-- Select a topic --</option>
+                    <?php foreach ($allTopics as $top): ?>
+                        <option value="<?= (int) $top['id'] ?>" 
+                                data-subject="<?= htmlspecialchars($top['subject_name']) ?>"
+                                data-topic="<?= htmlspecialchars($top['name']) ?>"
+                                data-strand="<?= htmlspecialchars($top['strand']) ?>">
+                            <?= htmlspecialchars($top['subject_name']) ?> — <?= htmlspecialchars($top['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
+            <label style="font-weight: 600; margin-top: 0.85rem;">Lesson duration (minutes)
+                <input type="number" id="duration" value="40" min="5" max="240" step="5" style="margin-top: 0.3rem;">
+            </label>
+
+            <label style="font-weight: 600; margin-top: 0.85rem;">What do you need help with?
+                <textarea id="teacher-need" rows="3" placeholder="e.g. Focus on practical classroom exercises." style="margin-top: 0.3rem;"></textarea>
+            </label>
+
+            <label style="font-weight: 600; margin-top: 0.85rem;">Available resources <span class="field-hint">(comma-separated)</span>
+                <input type="text" id="resources" value="chalkboard, chalk" placeholder="chalkboard, chalk" style="margin-top: 0.3rem;">
+            </label>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+                <button type="button" class="btn" id="cancel-gen-form-modal">Cancel</button>
+                <button type="submit" class="btn btn-accent" id="generate-btn" style="background: linear-gradient(135deg, var(--green-600), var(--green-500)); color: #fff; border: none; font-weight: 700;">✨ Generate lesson</button>
+            </div>
+        </form>
+
+        <div id="generate-result" hidden></div>
+    </div>
+</div>
+
+<!-- Generation Animation Modal -->
+<div class="modal-backdrop" id="generation-modal" style="display: none;">
+    <div class="modal premium-modal" style="max-width: 400px; width: 90%;">
+        <div class="modal-body gen-modal-content">
+            <!-- State: Generating -->
+            <div class="gen-state active" id="gen-state-loading">
+                <div class="gen-icon-container">
+                    <div class="gen-icon-bg"></div>
+                    <div class="gen-icon-core">✨</div>
+                </div>
+                <h2 style="margin: 0; font-size: 1.5rem;">AI is working...</h2>
+                <p class="gen-message">Structuring your KICD lesson plan based on the curriculum design.</p>
+                <button type="button" class="btn btn-outline" style="margin-top: 1.25rem; width: 100%;" id="gen-cancel-btn">Cancel</button>
+            </div>
+            
+            <!-- State: Success -->
+            <div class="gen-state gen-state-success" id="gen-state-success">
+                <div class="gen-icon-container">
+                    <div class="gen-icon-core">✓</div>
+                </div>
+                <h2 style="margin: 0; font-size: 1.5rem; color: var(--green-700);">Success!</h2>
+                <p class="gen-message">Lesson generated successfully. Redirecting you...</p>
+            </div>
+            
+            <!-- State: Error -->
+            <div class="gen-state gen-state-error" id="gen-state-error">
+                <div class="gen-icon-container">
+                    <div class="gen-icon-core">!</div>
+                </div>
+                <h2 style="margin: 0; font-size: 1.5rem; color: #b91c1c;">Generation Failed</h2>
+                <div class="gen-error-text" id="gen-error-message"></div>
+                <button type="button" class="btn btn-outline" style="margin-top: 1.5rem; width: 100%;" id="gen-close-btn">Close and try again</button>
+            </div>
+        </div>
+    </div>
+</div>
 ?>
 <section class="panel">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
@@ -206,5 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script src="assets/js/lesson.js"></script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

@@ -46,36 +46,54 @@ $breadcrumbs  = [
     ['label' => $topic['subject_name'], 'href' => 'subject.php?id=' . (int) $topic['subject_id']],
     ['label' => $topic['name']],
 ];
-$pageActions  = '<a class="btn btn-accent" href="#generate-form">＋ Generate lesson</a>';
+$pageActions  = '<button type="button" class="btn btn-accent" id="open-gen-form-modal-btn">✨ Generate lesson</button>';
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="panel">
-    <h2>Generate a lesson plan</h2>
-    <p class="muted">Grounded only in the KICD strand design on the server. AI output can be wrong — the teacher makes the final decision.</p>
 
-    <form id="generate-form" class="generate-form">
-        <input type="hidden" id="topic-name" value="<?= htmlspecialchars($topic['name']) ?>">
-        <input type="hidden" id="subject-name" value="<?= htmlspecialchars($topic['subject_name']) ?>">
-        <input type="hidden" id="strand-name" value="<?= htmlspecialchars($topic['strand']) ?>">
+<!-- Generate Lesson Form Modal Pop-Up -->
+<div class="modal-backdrop" id="generate-lesson-form-modal" style="display: none;">
+    <div class="modal premium-modal" style="max-width: 520px; width: 92%;">
+        <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 0.85rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.5rem;">✨</span>
+                <div>
+                    <h2 style="margin: 0; font-size: 1.2rem;">Generate Lesson Plan</h2>
+                    <p class="muted" style="margin: 0; font-size: 0.8rem;"><?= htmlspecialchars($topic['subject_name']) ?> · <?= htmlspecialchars($topic['name']) ?></p>
+                </div>
+            </div>
+            <button type="button" class="btn-link-danger" id="close-gen-form-modal" style="font-size: 1.3rem; border: none; background: none; cursor: pointer; color: var(--muted);" aria-label="Close">✕</button>
+        </div>
 
-        <label>Lesson duration (minutes)
-            <input type="number" id="duration" value="40" min="5" max="240" step="5">
-        </label>
+        <form id="generate-form" class="generate-form">
+            <input type="hidden" id="topic-name" value="<?= htmlspecialchars($topic['name']) ?>">
+            <input type="hidden" id="subject-name" value="<?= htmlspecialchars($topic['subject_name']) ?>">
+            <input type="hidden" id="strand-name" value="<?= htmlspecialchars($topic['strand']) ?>">
 
-        <label>What do you need help with?
-            <textarea id="teacher-need" rows="3"
-                placeholder="e.g. I have never taught this topic before."></textarea>
-        </label>
+            <label style="font-weight: 600; margin-top: 0;">Topic
+                <input type="text" value="<?= htmlspecialchars($topic['name']) ?>" disabled style="background: var(--surface-2); color: var(--ink-2); opacity: 0.85; margin-top: 0.3rem;">
+            </label>
 
-        <label>Available resources (separated by commas)
-            <input type="text" id="resources" value="chalkboard, chalk" placeholder="chalkboard, chalk">
-        </label>
+            <label style="font-weight: 600; margin-top: 0.85rem;">Lesson duration (minutes)
+                <input type="number" id="duration" value="40" min="5" max="240" step="5" style="margin-top: 0.3rem;">
+            </label>
 
-        <button type="submit" class="btn btn-accent" id="generate-btn">Generate lesson</button>
-    </form>
+            <label style="font-weight: 600; margin-top: 0.85rem;">What do you need help with?
+                <textarea id="teacher-need" rows="3" placeholder="e.g. I have never taught this topic before." style="margin-top: 0.3rem;"></textarea>
+            </label>
 
-    <div id="generate-result" hidden></div>
-</section>
+            <label style="font-weight: 600; margin-top: 0.85rem;">Available resources <span class="field-hint">(comma-separated)</span>
+                <input type="text" id="resources" value="chalkboard, chalk" placeholder="chalkboard, chalk" style="margin-top: 0.3rem;">
+            </label>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+                <button type="button" class="btn" id="cancel-gen-form-modal">Cancel</button>
+                <button type="submit" class="btn btn-accent" id="generate-btn" style="background: linear-gradient(135deg, var(--green-600), var(--green-500)); color: #fff; border: none; font-weight: 700;">✨ Generate lesson</button>
+            </div>
+        </form>
+
+        <div id="generate-result" hidden></div>
+    </div>
+</div>
 
 <section class="panel">
     <h2>Generated for this topic</h2>

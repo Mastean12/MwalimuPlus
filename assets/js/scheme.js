@@ -173,8 +173,9 @@
             html += '<section class="panel scheme-week"><h2>Week ' + wk + '</h2>';
             weeks[wk].forEach(function (index) {
                 var row = rows[index];
-                html += '<article class="scheme-lesson" data-row-index="' + index + '">' +
-                    '<h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + '</h3>' +
+                html += '<article class="edit-lesson-card scheme-lesson" data-row-index="' + index + '">' +
+                    '<div class="edit-lesson-header"><h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + (row.sub_strand ? ' — ' + escapeHtml(row.sub_strand) : '') + '</h3></div>' +
+                    '<div class="edit-fields-grid">' +
                     field('Sub strand', 'sub_strand', row.sub_strand, false) +
                     field('Specific learning outcomes', 'specific_outcomes', row.specific_outcomes, true) +
                     field('Key inquiry question', 'key_inquiry_question', row.key_inquiry_question, false) +
@@ -182,6 +183,7 @@
                     field('Learning resources', 'learning_resources', row.learning_resources, true) +
                     field('Assessment methods', 'assessment', row.assessment, false) +
                     field('Reference', 'reference', row.reference, false) +
+                    '</div>' +
                     '</article>';
             });
             html += '</section>';
@@ -504,7 +506,21 @@
         });
         order.sort(function (a, b) { return a - b; });
 
-        var html = '<div class="panel">' +
+        var html = '<div class="scheme-edit-banner">' +
+            '<div class="banner-title">' +
+            '<span class="banner-icon">✏️</span>' +
+            '<div>' +
+            '<strong>Edit Scheme of Work</strong>' +
+            '<p>Customize learning outcomes, key inquiry questions, and resources below.</p>' +
+            '</div>' +
+            '</div>' +
+            '<div class="banner-actions">' +
+            '<button type="button" class="btn" id="scheme-edit-cancel">Cancel</button>' +
+            '<button type="button" class="btn btn-primary" id="scheme-edit-save">Save changes</button>' +
+            '</div>' +
+            '</div>';
+
+        html += '<div class="panel">' +
             field('Key inquiry questions', 'key_inquiry_questions', data.key_inquiry_questions, true) +
             '</div>';
 
@@ -512,8 +528,9 @@
             html += '<section class="panel scheme-week"><h2>Week ' + wk + '</h2>';
             weeks[wk].forEach(function (index) {
                 var row = rows[index];
-                html += '<article class="scheme-lesson" data-row-index="' + index + '">' +
-                    '<h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + '</h3>' +
+                html += '<article class="edit-lesson-card scheme-lesson" data-row-index="' + index + '">' +
+                    '<div class="edit-lesson-header"><h3>Lesson ' + (parseInt(row.lesson, 10) || 0) + (row.sub_strand ? ' — ' + escapeHtml(row.sub_strand) : '') + '</h3></div>' +
+                    '<div class="edit-fields-grid">' +
                     field('Sub strand', 'sub_strand', row.sub_strand, false) +
                     field('Specific learning outcomes', 'specific_outcomes', row.specific_outcomes, true) +
                     field('Key inquiry question', 'key_inquiry_question', row.key_inquiry_question, false) +
@@ -521,14 +538,15 @@
                     field('Learning resources', 'learning_resources', row.learning_resources, true) +
                     field('Assessment methods', 'assessment', row.assessment, false) +
                     field('Reference', 'reference', row.reference, false) +
+                    '</div>' +
                     '</article>';
             });
             html += '</section>';
         });
 
-        html += '<div class="scheme-preview-actions">' +
-            '<button type="button" class="btn" id="scheme-edit-cancel">Cancel</button>' +
-            '<button type="button" class="btn btn-primary" id="scheme-edit-save">Save changes</button>' +
+        html += '<div class="scheme-preview-actions" style="margin-top: 1.5rem;">' +
+            '<button type="button" class="btn" id="scheme-edit-cancel-bottom">Cancel</button>' +
+            '<button type="button" class="btn btn-primary" id="scheme-edit-save-bottom">Save changes</button>' +
             '</div>';
 
         editBox.innerHTML = html;
@@ -572,12 +590,15 @@
     });
 
     editBox.addEventListener('click', function (event) {
-        if (event.target.id === 'scheme-edit-cancel') {
+        var isCancel = event.target.id === 'scheme-edit-cancel' || event.target.id === 'scheme-edit-cancel-bottom';
+        var isSave = event.target.id === 'scheme-edit-save' || event.target.id === 'scheme-edit-save-bottom';
+
+        if (isCancel) {
             viewBox.hidden = false;
             editBox.hidden = true;
             return;
         }
-        if (event.target.id !== 'scheme-edit-save') {
+        if (!isSave) {
             return;
         }
         var saveBtn = event.target;

@@ -92,25 +92,32 @@ function scheme_cell($value): string
     return htmlspecialchars((string) $value);
 }
 
-/** One material as a list item: icon, link, and an inline delete form. */
+/** One material as a styled material card. */
 function resource_item(array $r, int $schemeId, string $csrf): string
 {
-    $icon = ['youtube' => '▶', 'link' => '🔗', 'pdf' => '📄'][$r['kind']] ?? '🔗';
-    $href = $r['kind'] === 'pdf'
+    $kind = strtolower((string) ($r['kind'] ?? 'link'));
+    $icon = ['youtube' => '▶', 'link' => '🔗', 'pdf' => '📄'][$kind] ?? '🔗';
+    $kindLabel = ['youtube' => 'YouTube', 'link' => 'Web Link', 'pdf' => 'PDF Document'][$kind] ?? 'Link';
+    $href = $kind === 'pdf'
         ? 'download.php?id=' . (int) $r['id']
         : htmlspecialchars((string) $r['url']);
-    $label = htmlspecialchars($r['label'] !== '' ? $r['label'] : (string) $r['url']);
+    $label = htmlspecialchars($r['label'] !== '' ? $r['label'] : ($r['file_name'] !== '' && $r['file_name'] !== null ? $r['file_name'] : (string) $r['url']));
 
-    return '<li class="resource-item">'
-        . '<span class="resource-icon" aria-hidden="true">' . $icon . '</span>'
-        . '<a href="' . $href . '" target="_blank" rel="noopener">' . $label . '</a>'
-        . '<form method="post" action="api/scheme-resource.php" class="resource-del" data-confirm>'
+    return '<div class="material-card">'
+        . '<div class="material-card-body">'
+        . '<span class="material-kind-badge kind-' . htmlspecialchars($kind) . '"><span aria-hidden="true">' . $icon . '</span> ' . htmlspecialchars($kindLabel) . '</span>'
+        . '<a href="' . $href . '" class="material-title-link" target="_blank" rel="noopener" title="' . $label . '">' . $label . '</a>'
+        . '</div>'
+        . '<div class="material-card-actions">'
+        . '<a href="' . $href . '" class="material-action-btn" target="_blank" rel="noopener">' . ($kind === 'pdf' ? 'Download' : 'Open') . '</a>'
+        . '<form method="post" action="api/scheme-resource.php" style="display:inline;" data-confirm>'
         . '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf) . '">'
         . '<input type="hidden" name="scheme_id" value="' . $schemeId . '">'
         . '<input type="hidden" name="delete_id" value="' . (int) $r['id'] . '">'
-        . '<button type="submit" class="btn-link-danger" aria-label="Remove material" title="Remove">✕</button>'
+        . '<button type="submit" class="material-del-btn" aria-label="Remove material" title="Remove material">✕</button>'
         . '</form>'
-        . '</li>';
+        . '</div>'
+        . '</div>';
 }
 
 $pageTitle    = $scheme['title'];
@@ -188,13 +195,13 @@ require __DIR__ . '/includes/header.php';
                         <dd><span class="scheme-reflection" aria-hidden="true"></span></dd>
 
                         <?php if (!empty($rowResources[$rowKey])): ?>
-                            <dt>Materials</dt>
+                            <dt>Attached Materials</dt>
                             <dd>
-                                <ul class="resource-list">
+                                <div class="materials-cards-grid">
                                     <?php foreach ($rowResources[$rowKey] as $r): ?>
                                         <?= resource_item($r, $id, $csrf) ?>
                                     <?php endforeach; ?>
-                                </ul>
+                                </div>
                             </dd>
                         <?php endif; ?>
                     </dl>
@@ -227,13 +234,17 @@ require __DIR__ . '/includes/header.php';
         <p class="muted">PDFs, YouTube videos and web links you add for this scheme. These are your own — the AI never adds links.</p>
 
         <?php if ($schemeResources !== []): ?>
-            <ul class="resource-list">
+            <div class="materials-cards-grid" style="margin-top: 1rem;">
                 <?php foreach ($schemeResources as $r): ?>
                     <?= resource_item($r, $id, $csrf) ?>
                 <?php endforeach; ?>
-            </ul>
+            </div>
         <?php else: ?>
-            <p class="muted">No materials added yet.</p>
+            <div class="empty-materials-card">
+                <div class="empty-materials-icon">📎</div>
+                <h3>No attached learning materials</h3>
+                <p>Upload PDF guides, reference links, or YouTube videos to attach directly to this scheme of work for easy access during teaching.</p>
+            </div>
         <?php endif; ?>
 
         <form method="post" action="api/scheme-resource.php" class="add-resource" enctype="multipart/form-data">
