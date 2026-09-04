@@ -33,31 +33,42 @@
             .replace(/'/g, '&#039;');
     }
 
-    function renderSuccess(data) {
-        var lesson = data.lesson || {};
-        var html = '<div class="result-success">' +
-            '<p class="result-status">' + statusBadge(data.status) + '</p>' +
-            '<p class="disclosure">' + escapeHtml(data.disclosure || '') + '</p>' +
-            '<h3><a href="lesson.php?id=' + encodeURIComponent(data.saved_id || '') + '">' +
-            escapeHtml(lesson.title || '') + '</a></h3>';
+    var modal = document.getElementById('generation-modal');
+    var stateLoading = document.getElementById('gen-state-loading');
+    var stateSuccess = document.getElementById('gen-state-success');
+    var stateError = document.getElementById('gen-state-error');
+    var errorText = document.getElementById('gen-error-message');
+    var closeBtn = document.getElementById('gen-close-btn');
+    var cancelBtn = document.getElementById('gen-cancel-btn');
+    var isCancelled = false;
 
-        if (lesson.citations && lesson.citations.length) {
-            html += '<p class="citations">Sources: ' + escapeHtml(lesson.citations.join(', ')) + '</p>';
-        }
-        html += '</div>';
-        resultBox.innerHTML = html;
+    // Ensure modal is hidden on initial page load
+    if (modal) {
+        modal.style.display = 'none';
     }
 
-    function renderUnknown(data) {
-        resultBox.innerHTML =
-            '<div class="result-unknown">' +
-            '<p class="result-status">' + statusBadge(data.status || 'UNKNOWN') + '</p>' +
-            '<p>' + escapeHtml(data.sijui || 'I can\u2019t answer that from the curriculum design I have.') + '</p>' +
-            '</div>';
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            if (modal) modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        });
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function () {
+            isCancelled = true;
+            if (modal) modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Generate lesson';
+            }
+        });
     }
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+        isCancelled = false;
 
         var resources = document.getElementById('resources').value
             .split(',')
@@ -73,35 +84,64 @@
             resources: resources
         };
 
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+            stateLoading.classList.add('active');
+            stateSuccess.classList.remove('active');
+            stateError.classList.remove('active');
+        }
+
         button.disabled = true;
         button.textContent = 'Generating\u2026';
 
         window.Mwalimu.postJSON('api/generate-lesson.php', payload).then(function (data) {
-            resultBox.hidden = false;
-
-            if (!data.success) {
-                resultBox.innerHTML = '<div class="result-unknown"><p>' + escapeHtml(data.error || 'Something went wrong.') + '</p></div>';
+            if (isCancelled) {
                 return;
             }
-
-            if (data.demo_mode) {
-                resultBox.innerHTML = '<div class="result-unknown"><p>' + escapeHtml(data.message || '') + '</p></div>';
-                return;
+            if (modal) {
+                stateLoading.classList.remove('active');
+                if (!data.success) {
+                    stateError.classList.add('active');
+                    errorText.innerHTML = '<p>' + escapeHtml(data.error || 'Something went wrong.') + '</p>';
+                } else if (data.demo_mode) {
+                    stateError.classList.add('active');
+                    errorText.innerHTML = '<p>' + escapeHtml(data.message || '') + '</p>';
+                } else if (data.status === 'UNKNOWN' || !data.lesson) {
+                    stateError.classList.add('active');
+                    errorText.innerHTML = '<p class="result-status">' + statusBadge(data.status || 'UNKNOWN') + '</p><p>' + escapeHtml(data.sijui || 'I can\u2019t answer that from the curriculum design I have.') + '</p>';
+                } else {
+                    stateSuccess.classList.add('active');
+                    setTimeout(function () { window.location.href = 'lesson.php?id=' + data.saved_id; }, 1200);
+                }
+            } else {
+                // Fallback if modal is missing
+                resultBox.hidden = false;
+                if (!data.success) resultBox.innerHTML = '<div class="result-unknown"><p>' + escapeHtml(data.error || 'Something went wrong.') + '</p></div>';
+                else if (data.demo_mode) resultBox.innerHTML = '<div class="result-unknown"><p>' + escapeHtml(data.message || '') + '</p></div>';
+                else if (data.status === 'UNKNOWN' || !data.lesson) resultBox.innerHTML = '<div class="result-unknown"><p>' + escapeHtml(data.sijui || 'Error') + '</p></div>';
+                else {
+                    resultBox.innerHTML = '<div class="result-success"><h3>Success</h3></div>';
+                    setTimeout(function () { window.location.href = 'lesson.php?id=' + data.saved_id; }, 900);
+                }
             }
-
-            if (data.status === 'UNKNOWN' || !data.lesson) {
-                renderUnknown(data);
-                return;
-            }
-
-            renderSuccess(data);
-            setTimeout(function () { window.location.href = 'lesson.php?id=' + data.saved_id; }, 900);
         }).catch(function () {
-            resultBox.hidden = false;
-            resultBox.innerHTML = '<div class="result-unknown"><p>Network error \u2014 could not reach the server.</p></div>';
+            if (isCancelled) {
+                return;
+            }
+            if (modal) {
+                stateLoading.classList.remove('active');
+                stateError.classList.add('active');
+                errorText.innerHTML = '<p>Network error \u2014 could not reach the server.</p>';
+            } else {
+                resultBox.hidden = false;
+                resultBox.innerHTML = '<div class="result-unknown"><p>Network error \u2014 could not reach the server.</p></div>';
+            }
         }).then(function () {
-            button.disabled = false;
-            button.textContent = 'Generate lesson';
+            if (!isCancelled) {
+                button.disabled = false;
+                button.textContent = 'Generate lesson';
+            }
         });
     });
 })();

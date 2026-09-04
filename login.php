@@ -80,7 +80,10 @@ $pageTitle = 'Sign in';
 
     <!-- Brand / message panel -->
     <aside class="auth-panel">
-        <a class="brand auth-brand" href="login.php">Mwalimu<span>Plus</span></a>
+        <a class="brand auth-brand" href="login.php">
+            <span class="brand-mark" aria-hidden="true">M+</span>
+            <span class="brand-name">Mwalimu<span>Plus</span></span>
+        </a>
         <p class="auth-panel-lead">Lesson plans, grounded in the KICD curriculum your school teaches.</p>
 
         <ul class="auth-points">

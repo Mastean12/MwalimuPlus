@@ -29,6 +29,7 @@ $navItems = [
     'subjects'  => ['label' => 'Subjects',        'href' => 'subjects.php',           'icon' => '📚'],
     'lessons'   => ['label' => 'Lessons',         'href' => 'lessons.php',            'icon' => '📝'],
     'schemes'   => ['label' => 'Schemes of work', 'href' => 'schemes.php',            'icon' => '🗓️'],
+    'settings'  => ['label' => 'Settings',        'href' => 'settings.php',           'icon' => '⚙️'],
 ];
 ?>
 <!DOCTYPE html>
@@ -38,14 +39,35 @@ $navItems = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?> · MwalimuPlus</title>
     <link rel="manifest" href="offline/manifest.json">
-    <link rel="stylesheet" href="assets/css/app.css">
+<?php $favicon = get_setting('favicon_url', 'assets/icons/icon-192.png'); ?>
+    <link rel="icon" href="<?= htmlspecialchars($favicon) ?>" type="image/png">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($favicon) ?>">
+    <link rel="stylesheet" href="assets/css/app.css?v=<?= time() ?>">
     <meta name="theme-color" content="#1f6f43">
+    <style>
+        :root {
+            <?php if ($theme_topbar_bg = get_setting('theme_topbar_bg')): ?>--theme-topbar-bg: <?= htmlspecialchars($theme_topbar_bg) ?>;<?php endif; ?>
+            <?php if ($theme_topbar_text = get_setting('theme_topbar_text')): ?>--theme-topbar-text: <?= htmlspecialchars($theme_topbar_text) ?>;<?php endif; ?>
+            <?php if ($theme_sidebar_bg = get_setting('theme_sidebar_bg')): ?>--theme-sidebar-bg: <?= htmlspecialchars($theme_sidebar_bg) ?>;<?php endif; ?>
+            <?php if ($theme_sidebar_text = get_setting('theme_sidebar_text')): ?>--theme-sidebar-text: <?= htmlspecialchars($theme_sidebar_text) ?>;<?php endif; ?>
+            <?php if ($theme_page_bg = get_setting('theme_page_bg')): ?>--theme-page-bg: <?= htmlspecialchars($theme_page_bg) ?>;<?php endif; ?>
+        }
+    </style>
 </head>
 <body class="app-body">
 <?php if (!empty($showHeader)): ?>
 <div class="app">
     <aside class="sidebar" id="sidebar">
-        <a class="brand" href="dashboard.php">Mwalimu<span>Plus</span></a>
+        <a class="brand" href="dashboard.php" style="align-items: center; display: flex;">
+            <?php if ($logo = get_setting('logo_url')): ?>
+                <div class="sidebar-logo-container">
+                    <img src="<?= htmlspecialchars($logo) ?>" alt="MwalimuPlus Logo" style="max-height: 26px; width: auto; object-fit: contain;">
+                </div>
+            <?php else: ?>
+                <span class="brand-mark" aria-hidden="true">M+</span>
+                <span class="brand-name">Mwalimu<span>Plus</span></span>
+            <?php endif; ?>
+        </a>
         <nav class="sidebar-nav" aria-label="Main">
             <p class="sidebar-label">Menu</p>
             <?php foreach ($navItems as $key => $item): ?>
@@ -74,6 +96,23 @@ $navItems = [
                 <?php endforeach; ?>
             </nav>
             <div class="topbar-right">
+                <?php
+                require_once __DIR__ . '/../config/ai.php';
+                $aiActiveProvider = ai_default_provider();
+                $aiActiveModel = ai_selected_model('ai_default_model', $aiActiveProvider);
+                $aiChipTitle = 'AI model in use — set in Settings → AI';
+                $aiFallbackProvider = ai_fallback_provider();
+                if ($aiFallbackProvider !== '') {
+                    $aiFallbackMeta = ai_provider_meta($aiFallbackProvider);
+                    $aiChipTitle .= ' · Fallback: '
+                        . ($aiFallbackMeta['label'] ?? $aiFallbackProvider)
+                        . ' · ' . ai_selected_model('ai_fallback_model', $aiFallbackProvider);
+                }
+                ?>
+                <?php if (ai_provider_configured($aiActiveProvider) && $aiActiveModel !== ''): ?>
+                    <?php $aiActiveMeta = ai_provider_meta($aiActiveProvider); ?>
+                    <span class="topbar-ai-chip" title="<?= htmlspecialchars($aiChipTitle) ?>"><span class="chip-dot" aria-hidden="true"></span><?= htmlspecialchars(($aiActiveMeta['label'] ?? $aiActiveProvider) . ' · ' . $aiActiveModel) ?></span>
+                <?php endif; ?>
                 <time class="topbar-clock" id="topbar-clock" datetime=""></time>
                 <div class="topbar-user">
                     <a class="topbar-user-link" href="profile.php" data-open-profile>
@@ -103,7 +142,10 @@ $navItems = [
             </div>
 <?php elseif (!empty($publicHeader)): ?>
 <header class="topbar topbar-public">
-    <a class="brand" href="browse.php">Mwalimu<span>Plus</span></a>
+    <a class="brand" href="browse.php">
+        <span class="brand-mark" aria-hidden="true">M+</span>
+        <span class="brand-name">Mwalimu<span>Plus</span></span>
+    </a>
     <div class="topbar-right">
         <a class="btn btn-primary" href="login.php">Log in</a>
     </div>

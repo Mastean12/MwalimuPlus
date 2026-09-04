@@ -79,13 +79,29 @@ $pageSubtitle = $total . ' lesson' . ($total === 1 ? '' : 's') . ' generated so 
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="panel">
-    <form method="get" action="lessons.php" class="toolbar">
-        <div class="field field-search">
-            <label for="lessons-search">Search</label>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <h2 style="margin: 0;">Generated Lessons</h2>
+            <span class="badge" style="background: var(--surface-2); color: var(--muted); font-weight: 600; font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 999px;"><?= $total ?> total</span>
+        </div>
+        <div class="layout-toggle" style="display: flex; gap: .25rem; background: var(--surface-2); padding: .25rem; border-radius: 999px; border: 1px solid var(--line);">
+            <button type="button" class="btn btn-small btn-outline" id="toggle-list" style="margin: 0; border: none; border-radius: 999px; padding: 0.35rem 0.75rem;" title="List View">
+                <span aria-hidden="true">☰ List</span>
+            </button>
+            <button type="button" class="btn btn-small btn-outline" id="toggle-grid" style="margin: 0; border: none; border-radius: 999px; padding: 0.35rem 0.75rem;" title="Grid View">
+                <span aria-hidden="true">⊞ Grid</span>
+            </button>
+        </div>
+    </div>
+
+    <form method="get" action="lessons.php" class="lessons-filter-bar">
+        <div class="filter-search-field">
+            <span aria-hidden="true" style="color: var(--muted); font-size: 0.9rem;">🔍</span>
             <input type="search" id="lessons-search" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search title…">
         </div>
-        <div class="field">
-            <label for="lessons-subject">Subject</label>
+
+        <div class="filter-select-field">
+            <span aria-hidden="true" style="font-size: 0.85rem;">📚</span>
             <select id="lessons-subject" name="subject_id">
                 <option value="">All subjects</option>
                 <?php foreach ($subjects as $subject): ?>
@@ -93,8 +109,9 @@ require __DIR__ . '/includes/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="field">
-            <label for="lessons-status">Status</label>
+
+        <div class="filter-select-field">
+            <span aria-hidden="true" style="font-size: 0.85rem;">⚡</span>
             <select id="lessons-status" name="status">
                 <option value="">All statuses</option>
                 <option value="SUPPORTED"<?= $status === 'SUPPORTED' ? ' selected' : '' ?>>Supported</option>
@@ -102,37 +119,42 @@ require __DIR__ . '/includes/header.php';
                 <option value="UNKNOWN"<?= $status === 'UNKNOWN' ? ' selected' : '' ?>>Unknown</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary">Apply filters</button>
-        <?php if ($hasFilters): ?>
-            <a class="btn" href="lessons.php">Clear</a>
-        <?php endif; ?>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">Apply filters</button>
+            <?php if ($hasFilters): ?>
+                <a href="lessons.php" class="filter-clear-link">✕ Clear</a>
+            <?php endif; ?>
+        </div>
     </form>
 
     <?php if ($lessons): ?>
-        <table class="table">
-            <thead>
-                <tr><th>Title</th><th>Subject</th><th>Topic</th><th>Scheme</th><th>Status</th><th>Duration</th><th>Created</th></tr>
-            </thead>
-            <tbody>
+        <div class="premium-card-list" id="lessons-container">
             <?php foreach ($lessons as $lesson): ?>
-                <tr>
-                    <td><a href="lesson.php?id=<?= (int) $lesson['id'] ?>"><?= htmlspecialchars($lesson['title']) ?></a></td>
-                    <td><?= htmlspecialchars($lesson['subject_name']) ?></td>
-                    <td><?= htmlspecialchars($lesson['topic_name']) ?></td>
-                    <td>
-                        <?php if ($lesson['scheme_id']): ?>
-                            <a href="scheme.php?id=<?= (int) $lesson['scheme_id'] ?>"><?= htmlspecialchars((string) $lesson['scheme_title']) ?></a>
-                        <?php else: ?>
-                            <span class="muted">—</span>
-                        <?php endif; ?>
-                    </td>
-                    <td><span class="badge badge-<?= strtolower($lesson['status']) ?>"><?= htmlspecialchars($lesson['status']) ?></span></td>
-                    <td><?= (int) $lesson['duration_minutes'] ?> min</td>
-                    <td><?= htmlspecialchars($lesson['created_at']) ?></td>
-                </tr>
+                <div class="premium-card">
+                    <div class="premium-card-body">
+                        <div class="card-main-info">
+                            <h3 style="margin-top: 0; margin-bottom: .5rem; font-size: 1.15rem;"><a href="lesson.php?id=<?= (int) $lesson['id'] ?>"><?= htmlspecialchars($lesson['title']) ?></a></h3>
+                            <div class="premium-card-meta">
+                                <span class="badge" style="background:var(--surface-2); color:var(--ink);"><span aria-hidden="true" style="opacity: 0.6;">📚</span> <?= htmlspecialchars($lesson['subject_name']) ?></span>
+                                <span class="badge" style="background:var(--surface-2); color:var(--ink);"><span aria-hidden="true" style="opacity: 0.6;">📑</span> <?= htmlspecialchars($lesson['topic_name']) ?></span>
+                                <?php if ($lesson['scheme_id']): ?>
+                                    <a href="scheme.php?id=<?= (int) $lesson['scheme_id'] ?>" class="badge" style="background:var(--green-50); color:var(--green-700); text-decoration: none;"><span aria-hidden="true">🗓️</span> <?= htmlspecialchars((string) $lesson['scheme_title']) ?></a>
+                                <?php endif; ?>
+                                <span class="badge badge-<?= strtolower($lesson['status']) ?>"><?= htmlspecialchars($lesson['status']) ?></span>
+                            </div>
+                        </div>
+                        <p class="muted card-date" style="font-size: .85rem; margin-top: 1rem; display: flex; gap: 1rem;">
+                            <span>⏱️ <?= (int) $lesson['duration_minutes'] ?> min</span>
+                            <span>Created: <?= htmlspecialchars(date('d M Y, H:i', strtotime($lesson['created_at']))) ?></span>
+                        </p>
+                    </div>
+                    <div class="premium-card-footer">
+                        <a class="btn btn-small" href="lesson.php?id=<?= (int) $lesson['id'] ?>" style="margin-left: auto;">View Lesson</a>
+                    </div>
+                </div>
             <?php endforeach; ?>
-            </tbody>
-        </table>
+        </div>
 
         <?php if ($totalPages > 1): ?>
             <nav class="browse-pager">
@@ -153,5 +175,36 @@ require __DIR__ . '/includes/header.php';
         <p class="muted"><?= $hasFilters ? 'No lessons match those filters.' : 'No lessons yet — open a subject and topic to generate your first one.' ?></p>
     <?php endif; ?>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var container = document.getElementById('lessons-container');
+    var btnList = document.getElementById('toggle-list');
+    var btnGrid = document.getElementById('toggle-grid');
+    
+    if (container && btnList && btnGrid) {
+        var currentPref = localStorage.getItem('lessons_layout_pref') || 'list';
+        function applyLayout(mode) {
+            if (mode === 'grid') {
+                container.classList.remove('premium-card-list');
+                container.classList.add('premium-card-grid');
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+            } else {
+                container.classList.remove('premium-card-grid');
+                container.classList.add('premium-card-list');
+                btnList.classList.add('active');
+                btnGrid.classList.remove('active');
+            }
+            localStorage.setItem('lessons_layout_pref', mode);
+        }
+        
+        applyLayout(currentPref);
+        
+        btnList.addEventListener('click', function() { applyLayout('list'); });
+        btnGrid.addEventListener('click', function() { applyLayout('grid'); });
+    }
+});
+</script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

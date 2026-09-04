@@ -47,102 +47,91 @@ $pageHeading  = 'Dashboard';
 $pageSubtitle = 'Karibu, ' . current_user_name() . ' — pick a subject to browse its KICD strands and topics, then generate a grounded lesson plan.';
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="stat-grid">
-    <div class="stat-card">
-        <div>
-            <p class="stat-label">Subjects</p>
-            <p class="stat-value"><?= $subjectCount ?></p>
+<section class="premium-metric-grid">
+    <div class="premium-metric-card">
+        <div class="metric-icon-wrap metric-icon-green"><span aria-hidden="true">📚</span></div>
+        <div class="metric-content">
+            <span class="metric-label">Subjects</span>
+            <span class="metric-value"><?= $subjectCount ?></span>
         </div>
-        <span class="stat-icon stat-icon-green" aria-hidden="true">📚</span>
     </div>
-    <div class="stat-card">
-        <div>
-            <p class="stat-label">Topics available</p>
-            <p class="stat-value"><?= $topicCount ?></p>
+    <div class="premium-metric-card">
+        <div class="metric-icon-wrap metric-icon-blue"><span aria-hidden="true">🗂️</span></div>
+        <div class="metric-content">
+            <span class="metric-label">Topics</span>
+            <span class="metric-value"><?= $topicCount ?></span>
         </div>
-        <span class="stat-icon stat-icon-blue" aria-hidden="true">🗂️</span>
     </div>
-    <div class="stat-card">
-        <div>
-            <p class="stat-label">Lessons generated</p>
-            <p class="stat-value"><?= $lessonCount ?></p>
+    <div class="premium-metric-card">
+        <div class="metric-icon-wrap metric-icon-violet"><span aria-hidden="true">📝</span></div>
+        <div class="metric-content">
+            <span class="metric-label">Lessons</span>
+            <span class="metric-value"><?= $lessonCount ?></span>
         </div>
-        <span class="stat-icon stat-icon-violet" aria-hidden="true">📝</span>
     </div>
-    <div class="stat-card">
-        <div>
-            <p class="stat-label">Needs verification</p>
-            <p class="stat-value"><?= $needsVerification ?></p>
+    <div class="premium-metric-card">
+        <div class="metric-icon-wrap metric-icon-amber"><span aria-hidden="true">⚠️</span></div>
+        <div class="metric-content">
+            <span class="metric-label">To Verify</span>
+            <span class="metric-value"><?= $needsVerification ?></span>
         </div>
-        <span class="stat-icon stat-icon-amber" aria-hidden="true">⚠️</span>
     </div>
 </section>
 
-<section class="panel" id="subjects">
-    <h2>Subjects</h2>
-    <?php if ($subjects): ?>
-        <div class="card-grid">
-            <?php foreach ($subjects as $subject): ?>
-                <a class="card subject-card" href="subject.php?id=<?= (int) $subject['id'] ?>">
-                    <span class="subject-code"><?= htmlspecialchars($subject['code']) ?></span>
-                    <h3><?= htmlspecialchars($subject['name']) ?></h3>
-                    <p class="muted"><?= htmlspecialchars($subject['strand']) ?></p>
-                </a>
-            <?php endforeach; ?>
-        </div>
-    <?php else: ?>
-        <p class="muted">No subjects seeded yet — run <code>php database/seed.php</code>.</p>
-    <?php endif; ?>
-</section>
-
-<section class="panel" id="recent">
-    <h2>Recent lessons</h2>
-    <?php if ($recent): ?>
-        <div class="toolbar">
-            <div class="field field-search">
-                <label for="lesson-search">Search</label>
-                <input type="search" id="lesson-search" placeholder="Search title or topic…"
-                       data-filter-for="recent-table">
+<div class="dashboard-layout">
+    <div class="dashboard-main">
+        <section class="panel" id="recent" style="margin-top:0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Recent lessons</h2>
+                <a href="lessons.php" class="btn btn-small btn-outline">View All</a>
             </div>
-            <div class="field">
-                <label for="lesson-subject">Subject</label>
-                <select id="lesson-subject" data-filter-for="recent-table" data-filter-col="subject">
-                    <option value="">All subjects</option>
-                    <?php foreach ($subjects as $subject): ?>
-                        <option value="<?= htmlspecialchars($subject['name']) ?>"><?= htmlspecialchars($subject['name']) ?></option>
+            
+            <?php if ($recent): ?>
+                <div class="premium-card-list">
+                    <?php foreach ($recent as $lesson): ?>
+                        <div class="premium-card">
+                            <div class="premium-card-body">
+                                <div class="card-main-info">
+                                    <h3 style="margin-top: 0; margin-bottom: .25rem; font-size: 1.1rem;"><a href="lesson.php?id=<?= (int) $lesson['id'] ?>"><?= htmlspecialchars($lesson['title']) ?></a></h3>
+                                    <div class="premium-card-meta">
+                                        <span class="badge" style="background:var(--surface-2); color:var(--ink);"><span aria-hidden="true" style="opacity: 0.6;">📚</span> <?= htmlspecialchars($lesson['subject_name']) ?></span>
+                                        <span class="badge" style="background:var(--surface-2); color:var(--ink);"><span aria-hidden="true" style="opacity: 0.6;">📑</span> <?= htmlspecialchars($lesson['topic_name']) ?></span>
+                                        <span class="badge badge-<?= strtolower($lesson['status']) ?>"><?= htmlspecialchars($lesson['status']) ?></span>
+                                    </div>
+                                </div>
+                                <p class="muted card-date" style="font-size: .8rem; margin-top: .75rem;"><?= htmlspecialchars(date('d M Y', strtotime($lesson['created_at']))) ?></p>
+                            </div>
+                        </div>
                     <?php endforeach; ?>
-                </select>
+                </div>
+            <?php else: ?>
+                <p class="muted">No lessons yet — open a subject and topic to generate your first one.</p>
+            <?php endif; ?>
+        </section>
+    </div>
+
+    <div class="dashboard-sidebar">
+        <section class="panel" id="subjects" style="margin-top:0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Subjects</h2>
+                <a href="subjects.php" class="btn btn-small btn-outline">All</a>
             </div>
-            <div class="field">
-                <label for="lesson-status">Status</label>
-                <select id="lesson-status" data-filter-for="recent-table" data-filter-col="status">
-                    <option value="">All statuses</option>
-                    <option value="SUPPORTED">Supported</option>
-                    <option value="NEEDS_VERIFICATION">Needs verification</option>
-                    <option value="UNKNOWN">Unknown</option>
-                </select>
-            </div>
-        </div>
-        <table class="table" id="recent-table">
-            <thead>
-                <tr><th>Title</th><th>Subject</th><th>Status</th><th>Created</th></tr>
-            </thead>
-            <tbody>
-            <?php foreach ($recent as $lesson): ?>
-                <tr data-subject="<?= htmlspecialchars($lesson['subject_name']) ?>"
-                    data-status="<?= htmlspecialchars($lesson['status']) ?>">
-                    <td><a href="lesson.php?id=<?= (int) $lesson['id'] ?>"><?= htmlspecialchars($lesson['title']) ?></a></td>
-                    <td><?= htmlspecialchars($lesson['subject_name']) ?> · <?= htmlspecialchars($lesson['topic_name']) ?></td>
-                    <td><span class="badge badge-<?= strtolower($lesson['status']) ?>"><?= htmlspecialchars($lesson['status']) ?></span></td>
-                    <td><?= htmlspecialchars($lesson['created_at']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        <p class="muted" data-filter-empty="recent-table" hidden>No lessons match those filters.</p>
-    <?php else: ?>
-        <p class="muted">No lessons yet — open a subject and topic to generate your first one.</p>
-    <?php endif; ?>
-</section>
+
+            <?php if ($subjects): ?>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <?php foreach (array_slice($subjects, 0, 5) as $subject): ?>
+                        <a class="premium-subject-card" href="subject.php?id=<?= (int) $subject['id'] ?>" style="padding: 1rem;">
+                            <span class="subject-code-badge" style="top: 1rem; right: 1rem;"><?= htmlspecialchars($subject['code']) ?></span>
+                            <h3 style="font-size: 1rem; margin-bottom: 0.25rem;"><?= htmlspecialchars($subject['name']) ?></h3>
+                            <p class="muted" style="margin:0; font-size: 0.8rem;"><?= htmlspecialchars($subject['strand']) ?></p>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="muted">No subjects seeded yet — run <code>php database/seed.php</code>.</p>
+            <?php endif; ?>
+        </section>
+    </div>
+</div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

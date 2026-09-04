@@ -11,6 +11,8 @@
  *  POST /api/schemes.php  { "action": "update", "id": 1, "scheme": {...} }
  *                                            -> overwrite an already-saved scheme's
  *                                               content with teacher edits
+ *  POST /api/schemes.php  { "action": "hide", "id": 1, "is_hidden": 1|0 }
+ *                                            -> toggle public/hidden visibility
  */
 
 declare(strict_types=1);
@@ -165,6 +167,25 @@ try {
             exit;
         }
         $id = (int) $input['id'];
+
+        if (($input['action'] ?? '') === 'hide') {
+            $isHidden = !empty($input['is_hidden']) ? 1 : 0;
+            $stmt = $pdo->prepare('UPDATE schemes SET is_hidden = ? WHERE id = ? AND user_id = ?');
+            $stmt->execute([$isHidden, $id, $userId]);
+            
+            if ($stmt->rowCount() === 0) {
+                $check = $pdo->prepare('SELECT 1 FROM schemes WHERE id = ? AND user_id = ?');
+                $check->execute([$id, $userId]);
+                if (!$check->fetchColumn()) {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'error' => 'Scheme not found.']);
+                    exit;
+                }
+            }
+            
+            echo json_encode(['success' => true]);
+            exit;
+        }
 
         if (($input['action'] ?? '') === 'rename') {
             $title = trim((string) ($input['title'] ?? ''));

@@ -206,7 +206,7 @@ function claude_extract_json(?string $raw): ?array
  * subject whose only source is an uploaded PDF (see find_topic_sources() in
  * api/generate-lesson.php and resolve_subject_source() in api/generate-scheme.php).
  */
-function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS, ?string $pdfPath = null): ?string
+function claude_complete(string $system, string $userPrompt, int $maxTokens = CLAUDE_MAX_TOKENS, ?string $pdfPath = null, ?string $model = null): ?string
 {
     $key = claude_api_key();
     if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
@@ -230,7 +230,7 @@ function claude_complete(string $system, string $userPrompt, int $maxTokens = CL
     $content[] = ['type' => 'text', 'text' => $userPrompt];
 
     $body = json_encode([
-        'model' => CLAUDE_MODEL,
+        'model' => $model ?: CLAUDE_MODEL,
         'max_tokens' => $maxTokens,
         'system' => $system,
         'messages' => [
@@ -263,7 +263,7 @@ function claude_complete(string $system, string $userPrompt, int $maxTokens = CL
  * Multi-turn variant: sends a full messages array (each {role, content}) so a
  * conversation can be continued. Returns the assistant's text, or null.
  */
-function claude_chat(array $messages, string $system, int $maxTokens = CLAUDE_MAX_TOKENS): ?string
+function claude_chat(array $messages, string $system, int $maxTokens = CLAUDE_MAX_TOKENS, ?string $model = null): ?string
 {
     $key = claude_api_key();
     if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
@@ -271,7 +271,7 @@ function claude_chat(array $messages, string $system, int $maxTokens = CLAUDE_MA
     }
 
     $body = json_encode([
-        'model' => CLAUDE_MODEL,
+        'model' => $model ?: CLAUDE_MODEL,
         'max_tokens' => $maxTokens,
         'system' => $system,
         'messages' => $messages,

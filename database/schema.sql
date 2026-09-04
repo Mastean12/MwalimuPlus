@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS schemes (
   lessons_per_week TINYINT UNSIGNED NOT NULL DEFAULT 4,
   start_week TINYINT UNSIGNED NOT NULL DEFAULT 1,
   status ENUM('SUPPORTED','NEEDS_VERIFICATION','UNKNOWN') NOT NULL DEFAULT 'SUPPORTED',
+  is_hidden TINYINT UNSIGNED NOT NULL DEFAULT 0,
   payload JSON NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -159,4 +160,11 @@ CREATE TABLE IF NOT EXISTS password_resets (
   KEY idx_resets_user (user_id),
   KEY idx_resets_token (token_hash),
   CONSTRAINT fk_resets_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Global application settings (logo, favicon, etc.)
+CREATE TABLE IF NOT EXISTS settings (
+  setting_key VARCHAR(50) NOT NULL,
+  setting_value TEXT NULL,
+  PRIMARY KEY (setting_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -11,6 +11,34 @@
             .replace(/'/g, '&#039;');
     }
 
+    /* Layout toggle for schemes list/grid */
+    var schemesContainer = document.getElementById('schemes-container');
+    var btnList = document.getElementById('toggle-list');
+    var btnGrid = document.getElementById('toggle-grid');
+    if (schemesContainer && btnList && btnGrid) {
+        var currentLayout = localStorage.getItem('schemesLayout') || 'list';
+        
+        function setLayout(layout) {
+            if (layout === 'list') {
+                schemesContainer.classList.remove('premium-card-grid');
+                schemesContainer.classList.add('premium-card-list');
+                btnList.classList.remove('btn-outline');
+                btnGrid.classList.add('btn-outline');
+            } else {
+                schemesContainer.classList.remove('premium-card-list');
+                schemesContainer.classList.add('premium-card-grid');
+                btnGrid.classList.remove('btn-outline');
+                btnList.classList.add('btn-outline');
+            }
+            localStorage.setItem('schemesLayout', layout);
+        }
+        
+        setLayout(currentLayout);
+        
+        btnList.addEventListener('click', function() { setLayout('list'); });
+        btnGrid.addEventListener('click', function() { setLayout('grid'); });
+    }
+
     /* Toggle the "New scheme" panel from the page-header button. */
     var toggle = document.querySelector('[data-toggle="new-scheme"]');
     var panel = document.getElementById('new-scheme');
@@ -47,6 +75,52 @@
             }).catch(function () {
                 button.disabled = false;
                 window.alert('Network error — could not delete the scheme.');
+            });
+        });
+    });
+
+    /* Hide / Unhide a saved scheme (visibility toggle). */
+    document.querySelectorAll('[data-hide-scheme]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var id = button.getAttribute('data-hide-scheme');
+            var currentlyHidden = button.getAttribute('data-is-hidden') === '1';
+            var nowHidden = !currentlyHidden;
+
+            button.disabled = true;
+            window.Mwalimu.postJSON('api/schemes.php', {
+                action: 'hide',
+                id: id,
+                is_hidden: nowHidden ? 1 : 0
+            }).then(function (data) {
+                if (data && data.success) {
+                    // Update button state
+                    button.setAttribute('data-is-hidden', nowHidden ? '1' : '0');
+                    button.textContent = nowHidden ? '\uD83D\uDC41 Unhide' : '\uD83D\uDE48 Hide';
+                    button.classList.toggle('btn-outline', nowHidden);
+
+                    // Update visibility badge in the same row
+                    var row = button.closest('tr');
+                    if (row) {
+                        var badge = row.querySelector('td:nth-child(5) .badge');
+                        if (badge) {
+                            if (nowHidden) {
+                                badge.textContent = '\uD83D\uDE48 Hidden';
+                                badge.style.background = 'var(--surface-2)';
+                                badge.style.color = 'var(--muted)';
+                            } else {
+                                badge.textContent = '\uD83D\uDC41 Public';
+                                badge.style.background = 'var(--green-50)';
+                                badge.style.color = 'var(--green-700)';
+                            }
+                        }
+                    }
+                } else {
+                    window.alert((data && data.error) || 'Could not update visibility.');
+                }
+                button.disabled = false;
+            }).catch(function () {
+                button.disabled = false;
+                window.alert('Network error \u2014 could not update visibility.');
             });
         });
     });
@@ -560,7 +634,7 @@
             if (data.demo_mode) {
                 btn.disabled = false;
                 btn.textContent = original;
-                window.alert(data.message || 'Claude API key is not configured.');
+                window.alert(data.message || 'AI generation is not configured yet.');
                 return;
             }
             if (data.status === 'UNKNOWN' || !data.saved_id) {

@@ -13,11 +13,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/claude.php';
+require_once __DIR__ . '/../config/ai.php';
 require_once __DIR__ . '/../config/session.php';
 secure_session_start();
 
-set_time_limit(CLAUDE_TIMEOUT_SECONDS + 30);
+set_time_limit(AI_TIMEOUT_SECONDS + 30);
 header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['user_id'])) {
@@ -80,12 +80,11 @@ $sources = $lesson['source_file'] !== ''
     : trim((string) ($lesson['source_text'] ?? ''));
 $lessonJson = (string) ($lesson['payload'] ?? '{}');
 
-$key = claude_api_key();
-if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
+if (!ai_any_configured()) {
     echo json_encode([
         'success' => true,
         'status' => 'SUPPORTED',
-        'answer' => 'The Claude API key is not configured, so I can\'t answer questions yet. Set CLAUDE_API_KEY on the server.',
+        'answer' => ai_unconfigured_message(),
         'demo_mode' => true,
     ]);
     exit;
@@ -120,11 +119,11 @@ LESSON (JSON):
 {$lessonJson}
 PROMPT;
 
-$answer = claude_chat($messages, $system, 1500);
+$answer = ai_chat($messages, $system, 1500);
 
 if ($answer === null) {
     http_response_code(502);
-    echo json_encode(['success' => false, 'error' => 'The Claude API could not be reached. Please try again.']);
+    echo json_encode(['success' => false, 'error' => 'No configured AI provider could complete the request. Please try again.']);
     exit;
 }
 

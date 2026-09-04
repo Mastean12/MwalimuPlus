@@ -60,6 +60,15 @@ $breadcrumbs  = [
     ['label' => 'Subjects', 'href' => 'subjects.php'],
     ['label' => $subject['name']],
 ];
+$editData = htmlspecialchars(json_encode([
+    'id' => (int) $subject['id'],
+    'code' => $subject['code'],
+    'name' => $subject['name'],
+    'strand' => $subject['strand'],
+    'grade_level' => $subject['grade_level'],
+]), ENT_QUOTES, 'UTF-8');
+$pageActions  = '<button type="button" class="btn" data-edit-subject="' . $editData . '">✎ Edit subject</button>'
+    . '<button type="button" class="btn btn-danger-ghost" data-delete-subject="' . (int) $subject['id'] . '" data-subject-name="' . htmlspecialchars($subject['name'], ENT_QUOTES) . '">Delete</button>';
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="panel">
@@ -85,3 +94,4 @@ require __DIR__ . '/includes/header.php';
 </section>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
+<script src="assets/js/subject.js"></script>

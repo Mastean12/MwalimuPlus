@@ -20,6 +20,19 @@ function app_has_users(): bool
     return $has;
 }
 
+/** Fetches a global setting from the database, returning $default if not set or empty. */
+function get_setting(string $key, ?string $default = null): ?string
+{
+    static $cache = [];
+    if (!isset($cache[$key])) {
+        $stmt = db()->prepare('SELECT setting_value FROM settings WHERE setting_key = ?');
+        $stmt->execute([$key]);
+        $val = $stmt->fetchColumn();
+        $cache[$key] = ($val !== false && $val !== '') ? (string) $val : null;
+    }
+    return $cache[$key] ?? $default;
+}
+
 /**
  * Truncates a string to at most $max bytes without splitting a UTF-8 sequence.
  * Used to fit user input into VARCHAR columns; mbstring is not assumed.

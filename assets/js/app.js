@@ -134,6 +134,55 @@
     });
 })();
 
+/* Online/offline indicator: a floating pill that appears when the device
+   loses its connection and briefly when it comes back. Works on pages and
+   in the installed web app. */
+(function () {
+    'use strict';
+
+    var pill = document.createElement('div');
+    pill.className = 'conn-pill';
+    pill.hidden = true;
+    pill.setAttribute('role', 'status');
+    pill.setAttribute('aria-live', 'polite');
+    document.body.appendChild(pill);
+
+    var hideTimer = null;
+
+    function showOffline() {
+        clearTimeout(hideTimer);
+        pill.classList.remove('conn-pill-ok');
+        pill.textContent = "You're offline \u2014 showing content saved on this device.";
+        pill.hidden = false;
+    }
+
+    function showBackOnline() {
+        clearTimeout(hideTimer);
+        pill.textContent = 'Back online';
+        pill.classList.add('conn-pill-ok');
+        pill.hidden = false;
+        hideTimer = setTimeout(function () {
+            pill.hidden = true;
+            pill.classList.remove('conn-pill-ok');
+        }, 2600);
+    }
+
+    function onOnline() {
+        showBackOnline();
+    }
+
+    function onOffline() {
+        showOffline();
+    }
+
+    if (!navigator.onLine) {
+        showOffline();
+    }
+
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+})();
+
 /* Profile modal: opens profile.php's content in a dialog instead of
    navigating there. Falls back to a normal page load when JS is off, since
    the trigger is a real link and the forms inside post to profile.php. */

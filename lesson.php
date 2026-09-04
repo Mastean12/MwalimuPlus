@@ -103,6 +103,7 @@ $pageActions  = ($isUnknown || $payload === null ? '' :
         '<a class="btn btn-primary" href="present.php?id=' . $id . '">▶ Present</a>'
         . '<a class="btn" href="ask.php?lesson=' . $id . '">💬 Ask the AI</a>')
     . '<button class="btn" type="button" onclick="window.print()">Print / save as PDF</button>'
+    . ' <button class="btn btn-primary" type="button" id="share-lesson-toggle" aria-expanded="false" aria-controls="share-panel">Share to parent</button>'
     . '<a class="btn" href="topic.php?id=' . (int) $lesson['topic_id'] . '">Back to topic</a>';
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/lesson-body.php';
@@ -226,5 +227,21 @@ require __DIR__ . '/includes/lesson-body.php';
     <a class="btn" href="topic.php?id=<?= (int) $lesson['topic_id'] ?>">Back to topic</a>
 </div>
 
+<section class="panel share-panel" id="share-panel" hidden aria-label="Share this lesson with a parent">
+    <h2>Share this lesson with a parent</h2>
+    <p class="muted">Sends a PDF of <em><?= htmlspecialchars($lesson['title']) ?></em> to the parent&rsquo;s WhatsApp number.</p>
+    <form id="share-form">
+        <input type="hidden" name="id" value="<?= (int) $lesson['id'] ?>">
+        <label for="share-phone">Parent&rsquo;s WhatsApp number</label>
+        <input type="tel" id="share-phone" name="phone" inputmode="tel" autocomplete="tel"
+               placeholder="e.g. 0712 345 678" required>
+        <label for="share-message">Note to the parent (optional)</label>
+        <textarea id="share-message" name="message" rows="2"
+                  placeholder="e.g. Kindly review and sign the lesson notes."></textarea>
+        <button type="submit" class="btn btn-primary" id="share-btn">Send PDF via WhatsApp</button>
+        <p class="field-hint" id="share-status" role="status"></p>
+    </form>
+</section>
+<script src="assets/js/share-lesson.js"></script>
 <script src="assets/js/lesson.js"></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

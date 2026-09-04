@@ -22,8 +22,12 @@ declare(strict_types=1);
 <?php endif; ?>
 <script src="assets/js/app.js"></script>
 <script>
-    if ('serviceWorker' in navigator && location.protocol === 'https:') {
-        navigator.serviceWorker.register('offline/service-worker.js').catch(function () {});
+    if ('serviceWorker' in navigator) {
+        var host = location.hostname;
+        var isLocalDev = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+        if (location.protocol === 'https:' || isLocalDev) {
+            navigator.serviceWorker.register('sw.js').catch(function () {});
+        }
     }
 </script>
 </body>

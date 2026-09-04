@@ -83,7 +83,10 @@ $pageTitle = 'Set up your account';
 <div class="auth-shell auth-shell-single">
 
     <main class="auth-form-panel">
-        <a class="brand auth-brand" href="login.php">Mwalimu<span>Plus</span></a>
+        <a class="brand auth-brand" href="login.php">
+            <span class="brand-mark" aria-hidden="true">M+</span>
+            <span class="brand-name">Mwalimu<span>Plus</span></span>
+        </a>
         <h1>Set up your school account</h1>
         <p class="auth-sub">This first account belongs to the school. Other teachers sign in with accounts created here.</p>
 

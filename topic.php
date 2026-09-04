@@ -46,7 +46,7 @@ $breadcrumbs  = [
     ['label' => $topic['subject_name'], 'href' => 'subject.php?id=' . (int) $topic['subject_id']],
     ['label' => $topic['name']],
 ];
-$pageActions  = '<a class="btn btn-primary" href="#generate-form">＋ Generate lesson</a>';
+$pageActions  = '<a class="btn btn-accent" href="#generate-form">＋ Generate lesson</a>';
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="panel">
@@ -71,7 +71,7 @@ require __DIR__ . '/includes/header.php';
             <input type="text" id="resources" value="chalkboard, chalk" placeholder="chalkboard, chalk">
         </label>
 
-        <button type="submit" class="btn btn-primary" id="generate-btn">Generate lesson</button>
+        <button type="submit" class="btn btn-accent" id="generate-btn">Generate lesson</button>
     </form>
 
     <div id="generate-result" hidden></div>
@@ -98,6 +98,45 @@ require __DIR__ . '/includes/header.php';
         <p class="muted">No lessons generated for this topic yet.</p>
     <?php endif; ?>
 </section>
+
+<!-- Generation Modal -->
+<div class="modal-backdrop" id="generation-modal" style="display: none;">
+    <div class="modal premium-modal" style="max-width: 400px; width: 90%;">
+        <div class="modal-body gen-modal-content">
+            
+            <!-- State: Generating -->
+            <div class="gen-state active" id="gen-state-loading">
+                <div class="gen-icon-container">
+                    <div class="gen-icon-bg"></div>
+                    <div class="gen-icon-core">✨</div>
+                </div>
+                <h2 style="margin: 0; font-size: 1.5rem;">AI is working...</h2>
+                <p class="gen-message">Structuring your KICD lesson plan based on the curriculum design.</p>
+                <button type="button" class="btn btn-outline" style="margin-top: 1.25rem; width: 100%;" id="gen-cancel-btn">Cancel</button>
+            </div>
+            
+            <!-- State: Success -->
+            <div class="gen-state gen-state-success" id="gen-state-success">
+                <div class="gen-icon-container">
+                    <div class="gen-icon-core">✓</div>
+                </div>
+                <h2 style="margin: 0; font-size: 1.5rem; color: var(--green-700);">Success!</h2>
+                <p class="gen-message">Lesson generated successfully. Redirecting you...</p>
+            </div>
+            
+            <!-- State: Error -->
+            <div class="gen-state gen-state-error" id="gen-state-error">
+                <div class="gen-icon-container">
+                    <div class="gen-icon-core">!</div>
+                </div>
+                <h2 style="margin: 0; font-size: 1.5rem; color: #b91c1c;">Generation Failed</h2>
+                <div class="gen-error-text" id="gen-error-message"></div>
+                <button type="button" class="btn btn-outline" style="margin-top: 1.5rem; width: 100%;" id="gen-close-btn">Close and try again</button>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script src="assets/js/lesson.js"></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

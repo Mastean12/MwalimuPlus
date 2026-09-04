@@ -106,7 +106,10 @@ $pageTitle = 'Choose a new password';
 <div class="auth-shell auth-shell-single">
 
     <main class="auth-form-panel">
-        <a class="brand auth-brand" href="login.php">Mwalimu<span>Plus</span></a>
+        <a class="brand auth-brand" href="login.php">
+            <span class="brand-mark" aria-hidden="true">M+</span>
+            <span class="brand-name">Mwalimu<span>Plus</span></span>
+        </a>
 
         <?php if ($token === ''): ?>
             <h1>Reset link not valid</h1>

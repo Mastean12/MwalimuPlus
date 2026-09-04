@@ -14,11 +14,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/claude.php';
+require_once __DIR__ . '/../config/ai.php';
 require_once __DIR__ . '/../config/session.php';
 secure_session_start();
 
-set_time_limit(CLAUDE_TIMEOUT_SECONDS + 30);
+set_time_limit(AI_TIMEOUT_SECONDS + 30);
 header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['user_id'])) {
@@ -74,8 +74,7 @@ if ($lesson['status'] === 'UNKNOWN' || $lesson['payload'] === null || trim($sour
     exit;
 }
 
-$key = claude_api_key();
-if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
+if (!ai_any_configured()) {
     echo json_encode([
         'success' => true,
         'disclosure' => disclosure(),
@@ -83,7 +82,7 @@ if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
         'study' => null,
         'sijui' => null,
         'demo_mode' => true,
-        'message' => 'Claude API key is not configured. Set CLAUDE_API_KEY to generate flashcards and Q&A.',
+        'message' => ai_unconfigured_message(),
     ]);
     exit;
 }
@@ -132,10 +131,10 @@ Return ONLY valid JSON matching exactly:
 Aim for 6-10 flashcards and 4-6 Q&A. If the SOURCES cannot support this, return { "study": null }.
 PROMPT;
 
-$raw = claude_complete($system, $userPrompt, 8000);
+$raw = ai_complete($system, $userPrompt, 8000);
 if ($raw === null) {
     http_response_code(502);
-    echo json_encode(['success' => false, 'error' => 'The Claude API could not be reached or returned an error. Please try again.']);
+    echo json_encode(['success' => false, 'error' => 'No configured AI provider could complete the request. Please try again.']);
     exit;
 }
 

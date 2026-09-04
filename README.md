@@ -69,17 +69,17 @@ This loads the subjects and topics (Mathematics, Biology) that map to the KICD s
 
 ## Configuration
 
-Set your Claude API key via an environment variable:
+AI generation is powered by one of three providers — **Claude**, **OpenAI** or **DeepSeek** — each enabled by its own key in `.env` (or a real environment variable). A provider only appears once its key is present. Keys are never stored in the database.
 
 ```bash
-set CLAUDE_API_KEY=sk-ant-...    # Windows (cmd)
-$env:CLAUDE_API_KEY = "sk-ant-..."   # Windows (PowerShell)
-export CLAUDE_API_KEY=sk-ant-...     # macOS / Linux
+CLAUDE_API_KEY=sk-ant-...       # Anthropic
+OPENAI_API_KEY=sk-...           # OpenAI
+DEEPSEEK_API_KEY=sk-...         # DeepSeek
 ```
 
-Or edit the placeholder `'YOUR_CLAUDE_API_KEY'` inside `config/claude.php`.
+Open **Settings → AI** to pick the default provider and model, plus an optional fallback provider (and model) that is retried automatically when the default fails or times out. Claude ships with `claude-opus-5`, `claude-sonnet-5` and `claude-haiku-5`; OpenAI with `gpt-4o-mini`, `gpt-4o`, `gpt-4.1-mini` and `gpt-4.1`; DeepSeek with `deepseek-v4-pro`, `deepseek-v4-flash`, `deepseek-chat` and `deepseek-reasoner`. Available models are defined in `config/ai.php`.
 
-> The placeholder is preferable over committing a real key to the repo. Without a key the app still runs: generation requests are validated against the curriculum corpus and return a clear "key not configured" demo message.
+Without any key the app still runs: generation requests are validated against the curriculum corpus and return a clear "key not configured" demo message.
 
 ## Running the system
 

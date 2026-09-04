@@ -32,13 +32,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/claude.php';
+require_once __DIR__ . '/../config/ai.php';
 require_once __DIR__ . '/../config/session.php';
 secure_session_start();
 
 // A grounded generation call runs ~15-40s. Don't let PHP's own execution limit
 // kill it before cURL's timeout does.
-set_time_limit(CLAUDE_TIMEOUT_SECONDS + 30);
+set_time_limit(AI_TIMEOUT_SECONDS + 30);
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -213,9 +213,7 @@ If the SOURCES do not lay out lessons for this strand, instead return:
 { "scheme": null }
 PROMPT;
 
-// Placeholder key? Return a clear, actionable demo message.
-$key = claude_api_key();
-if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
+if (!ai_any_configured()) {
     http_response_code(200);
     echo json_encode([
         'success' => true,
@@ -224,17 +222,20 @@ if ($key === '' || $key === 'YOUR_CLAUDE_API_KEY') {
         'scheme' => null,
         'sijui' => null,
         'demo_mode' => true,
-        'message' => 'Claude API key is not configured. Set the CLAUDE_API_KEY environment variable (or the placeholder in config/claude.php) to generate a real scheme. The request was validated against the curriculum corpus.',
+        'message' => ai_unconfigured_message(),
     ]);
     exit;
 }
 
 $system = claude_scheme_system_prompt($request['subject'], $resolved['strand'], $sources, $pdfPath !== null);
-$raw = claude_complete($system, $userPrompt, 8000, $pdfPath);
+$raw = ai_complete($system, $userPrompt, 8000, $pdfPath);
 
 if ($raw === null) {
     http_response_code(502);
-    echo json_encode(['success' => false, 'error' => 'The Claude API could not be reached or returned an error. Please try again.']);
+    $hint = ($pdfPath !== null && !ai_document_capable_configured())
+        ? ' The source is a PDF curriculum document, which requires the Claude provider to be configured.'
+        : '';
+    echo json_encode(['success' => false, 'error' => 'No configured AI provider could complete the request.' . $hint . ' Please try again.']);
     exit;
 }
 
