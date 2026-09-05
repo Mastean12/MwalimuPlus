@@ -125,6 +125,7 @@ function ensure_schema(PDO $pdo): void
             lessons_per_week TINYINT UNSIGNED NOT NULL DEFAULT 4,
             start_week TINYINT UNSIGNED NOT NULL DEFAULT 1,
             status ENUM('SUPPORTED','NEEDS_VERIFICATION','UNKNOWN') NOT NULL DEFAULT 'SUPPORTED',
+            is_hidden TINYINT UNSIGNED NOT NULL DEFAULT 0,
             payload JSON NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -133,6 +134,13 @@ function ensure_schema(PDO $pdo): void
             CONSTRAINT fk_schemes_subject FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    // schemes.is_hidden: lets a teacher hide a scheme from the public browse.php
+    // listing without deleting it. Added after the initial schemes table shipped,
+    // so existing databases need the migration below.
+    if (!column_exists($pdo, 'schemes', 'is_hidden')) {
+        $pdo->exec('ALTER TABLE schemes ADD COLUMN is_hidden TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER status');
+    }
 
     // --- Migrations below: run on every connect. MySQL's ALTER TABLE has no
     // portable "IF NOT EXISTS" for ADD COLUMN/KEY, so check first / catch-and-ignore. ---
