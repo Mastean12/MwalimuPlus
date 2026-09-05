@@ -85,13 +85,13 @@ $navItems = [
         <header class="topbar">
             <button class="topbar-toggle" type="button" aria-label="Toggle menu" data-sidebar-toggle>☰</button>
             <nav class="breadcrumbs" aria-label="Breadcrumb">
-                <a href="dashboard.php">Home</a>
+                <a href="dashboard.php" title="Home">Home</a>
                 <?php foreach ($breadcrumbs as $crumb): ?>
                     <span class="crumb-sep">/</span>
                     <?php if (!empty($crumb['href'])): ?>
-                        <a href="<?= htmlspecialchars($crumb['href']) ?>"><?= htmlspecialchars($crumb['label']) ?></a>
+                        <a href="<?= htmlspecialchars($crumb['href']) ?>" title="<?= htmlspecialchars($crumb['label']) ?>"><?= htmlspecialchars($crumb['label']) ?></a>
                     <?php else: ?>
-                        <span><?= htmlspecialchars($crumb['label']) ?></span>
+                        <span title="<?= htmlspecialchars($crumb['label']) ?>"><?= htmlspecialchars($crumb['label']) ?></span>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </nav>

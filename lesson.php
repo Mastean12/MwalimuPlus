@@ -245,4 +245,5 @@ require __DIR__ . '/includes/lesson-body.php';
 </section>
 <script src="assets/js/share-lesson.js"></script>
 <script src="assets/js/lesson.js"></script>
+<script src="assets/js/lesson-layout.js"></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
