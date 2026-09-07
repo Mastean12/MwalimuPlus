@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/claude.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/secret.php';
 
 const AI_TIMEOUT_SECONDS = 120;
 const AI_OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
@@ -58,17 +59,42 @@ function ai_model_in_provider(string $provider, string $model): bool
     return in_array($model, ai_provider_models($provider), true);
 }
 
-function ai_provider_configured(string $provider): bool
+/**
+ * Resolves the API key for $provider: a key saved via Settings > AI
+ * (encrypted in the settings table) always wins over the .env value, so a
+ * superadmin never has to touch the server filesystem to configure one.
+ */
+function ai_provider_api_key(string $provider): string
 {
     $meta = ai_provider_meta($provider);
     if ($meta === null) {
+        return '';
+    }
+
+    $stored = (string) get_setting('ai_secret_' . $provider, '');
+    if ($stored !== '') {
+        $decrypted = decrypt_secret($stored);
+        if ($decrypted !== null && trim($decrypted) !== '') {
+            return trim($decrypted);
+        }
+    }
+
+    $envKey = getenv($meta['env']);
+    return is_string($envKey) ? trim($envKey) : '';
+}
+
+/** True when $provider has a DB-stored key (as opposed to only a .env one, or none). */
+function ai_provider_key_in_db(string $provider): bool
+{
+    return ((string) get_setting('ai_secret_' . $provider, '')) !== '';
+}
+
+function ai_provider_configured(string $provider): bool
+{
+    if (ai_provider_meta($provider) === null) {
         return false;
     }
-    $key = getenv($meta['env']);
-    if (!is_string($key)) {
-        return false;
-    }
-    $key = trim($key);
+    $key = ai_provider_api_key($provider);
     return $key !== '' && strpos($key, 'YOUR_') !== 0;
 }
 
@@ -160,15 +186,14 @@ function ai_chain(): array
 
 function ai_config_hint(): string
 {
-    $envs = array_map(static fn (array $meta): string => $meta['env'], ai_providers());
-    return 'No AI provider is configured. Add at least one of ' . implode(', ', $envs)
-        . ' to the server .env file to enable AI features.';
+    return 'No AI provider is configured. Add an API key for Claude, OpenAI, or DeepSeek '
+        . 'in Settings > AI to enable AI features.';
 }
 
 function ai_unconfigured_message(): string
 {
     return 'No AI provider key is configured, so this can\'t run yet. '
-        . 'Set CLAUDE_API_KEY, OPENAI_API_KEY or DEEPSEEK_API_KEY in the server .env file.';
+        . 'A superadmin can add a Claude, OpenAI, or DeepSeek key in Settings > AI.';
 }
 
 function ai_openai_compatible_chat(string $url, string $model, string $apiKey, array $messages, string $system, int $maxTokens, string $vendor): ?string
@@ -221,14 +246,14 @@ function ai_openai_compatible_chat(string $url, string $model, string $apiKey, a
 
 function ai_openai_chat(array $messages, string $system, int $maxTokens, string $model): ?string
 {
-    $key = getenv('OPENAI_API_KEY');
-    if (!is_string($key) || trim($key) === '') {
+    $key = ai_provider_api_key('openai');
+    if ($key === '') {
         return null;
     }
     return ai_openai_compatible_chat(
         AI_OPENAI_URL,
         $model,
-        trim($key),
+        $key,
         $messages,
         $system,
         $maxTokens,
@@ -238,14 +263,14 @@ function ai_openai_chat(array $messages, string $system, int $maxTokens, string 
 
 function ai_deepseek_chat(array $messages, string $system, int $maxTokens, string $model): ?string
 {
-    $key = getenv('DEEPSEEK_API_KEY');
-    if (!is_string($key) || trim($key) === '') {
+    $key = ai_provider_api_key('deepseek');
+    if ($key === '') {
         return null;
     }
     return ai_openai_compatible_chat(
         AI_DEEPSEEK_URL,
         $model,
-        trim($key),
+        $key,
         $messages,
         $system,
         $maxTokens,

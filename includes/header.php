@@ -13,6 +13,10 @@
  *   $pageActions  string  raw HTML for the top-right actions (buttons/links)
  *   $publicHeader bool    render a bare topbar (brand + Log in) with no sidebar,
  *                         for pages reachable without a session; ignored if $showHeader is set
+ *   $adminShell   bool    render the superadmin panel's own sidebar/nav (see
+ *                         $adminNavGroups below) instead of the teacher nav —
+ *                         superadmin is a fully separate account, never a
+ *                         promoted teacher, so it gets its own shell entirely.
  */
 
 declare(strict_types=1);
@@ -23,13 +27,27 @@ $pageHeading  = $pageHeading  ?? $pageTitle;
 $pageSubtitle = $pageSubtitle ?? '';
 $pageIcon     = $pageIcon     ?? '📋';
 $pageActions  = $pageActions  ?? '';
+$adminShell   = $adminShell   ?? false;
+$homeHref     = $adminShell ? 'superadmin.php' : 'dashboard.php';
 
 $navItems = [
     'dashboard' => ['label' => 'Dashboard',      'href' => 'dashboard.php',          'icon' => '🏠'],
     'subjects'  => ['label' => 'Subjects',        'href' => 'subjects.php',           'icon' => '📚'],
     'lessons'   => ['label' => 'Lessons',         'href' => 'lessons.php',            'icon' => '📝'],
     'schemes'   => ['label' => 'Schemes of work', 'href' => 'schemes.php',            'icon' => '🗓️'],
-    'settings'  => ['label' => 'Settings',        'href' => 'settings.php',           'icon' => '⚙️'],
+];
+
+// The superadmin panel's nav mirrors its own control tree — grouped, not
+// flat like the teacher sidebar — since it is a separate account and shell.
+$adminNavGroups = [
+    ['label' => 'Overview',              'items' => ['admin-home'       => ['label' => 'Dashboard',        'href' => 'superadmin.php',              'icon' => '🏠']]],
+    ['label' => 'Manage Teachers',       'items' => ['admin-teachers'   => ['label' => 'Teachers',          'href' => 'superadmin-users.php',        'icon' => '👥']]],
+    ['label' => 'Curriculum Management', 'items' => ['admin-curriculum' => ['label' => 'Curriculum',        'href' => 'superadmin-curriculum.php',   'icon' => '📚']]],
+    ['label' => 'AI Configuration',      'items' => ['admin-ai'         => ['label' => 'AI & Prompts',      'href' => 'superadmin-ai.php',           'icon' => '🤖']]],
+    ['label' => 'Lessons & Content',     'items' => ['admin-content'    => ['label' => 'Content',           'href' => 'superadmin-content.php',      'icon' => '📝']]],
+    ['label' => 'Analytics',             'items' => ['admin-analytics'  => ['label' => 'Analytics',         'href' => 'superadmin-analytics.php',    'icon' => '📊']]],
+    ['label' => 'Security',              'items' => ['admin-security'   => ['label' => 'Security',          'href' => 'superadmin-security.php',     'icon' => '🔒']]],
+    ['label' => 'Platform Settings',     'items' => ['admin-settings'   => ['label' => 'Settings',          'href' => 'settings.php',                'icon' => '⚙️']]],
 ];
 ?>
 <!DOCTYPE html>
@@ -58,7 +76,7 @@ $navItems = [
 <?php if (!empty($showHeader)): ?>
 <div class="app">
     <aside class="sidebar" id="sidebar">
-        <a class="brand" href="dashboard.php" style="align-items: center; display: flex;">
+        <a class="brand" href="<?= htmlspecialchars($homeHref) ?>" style="align-items: center; display: flex;">
             <?php if ($logo = get_setting('logo_url')): ?>
                 <div class="sidebar-logo-container">
                     <img src="<?= htmlspecialchars($logo) ?>" alt="MwalimuPlus Logo" style="max-height: 26px; width: auto; object-fit: contain;">
@@ -69,15 +87,29 @@ $navItems = [
             <?php endif; ?>
         </a>
         <nav class="sidebar-nav" aria-label="Main">
-            <p class="sidebar-label">Menu</p>
-            <?php foreach ($navItems as $key => $item): ?>
-                <a href="<?= htmlspecialchars($item['href']) ?>"<?= $activeNav === $key ? ' class="active" aria-current="page"' : '' ?>>
-                    <span class="nav-icon" aria-hidden="true"><?= $item['icon'] ?></span>
-                    <?= htmlspecialchars($item['label']) ?>
-                </a>
-            <?php endforeach; ?>
+            <?php if ($adminShell): ?>
+                <?php foreach ($adminNavGroups as $group): ?>
+                    <p class="sidebar-label"><?= htmlspecialchars($group['label']) ?></p>
+                    <?php foreach ($group['items'] as $key => $item): ?>
+                        <a href="<?= htmlspecialchars($item['href']) ?>"<?= $activeNav === $key ? ' class="active" aria-current="page"' : '' ?>>
+                            <span class="nav-icon" aria-hidden="true"><?= $item['icon'] ?></span>
+                            <?= htmlspecialchars($item['label']) ?>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p class="sidebar-label">Menu</p>
+                <?php foreach ($navItems as $key => $item): ?>
+                    <a href="<?= htmlspecialchars($item['href']) ?>"<?= $activeNav === $key ? ' class="active" aria-current="page"' : '' ?>>
+                        <span class="nav-icon" aria-hidden="true"><?= $item['icon'] ?></span>
+                        <?= htmlspecialchars($item['label']) ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </nav>
-        <p class="sidebar-note">Mwalimu AI is a prep assistant. It can be wrong — you make the final call in your classroom.</p>
+        <p class="sidebar-note"><?= $adminShell
+            ? 'Super Admin panel — full control over every teacher account, the curriculum, and platform settings.'
+            : 'Mwalimu AI is a prep assistant. It can be wrong — you make the final call in your classroom.' ?></p>
     </aside>
     <div class="sidebar-backdrop" hidden data-sidebar-backdrop></div>
 
@@ -85,7 +117,7 @@ $navItems = [
         <header class="topbar">
             <button class="topbar-toggle" type="button" aria-label="Toggle menu" data-sidebar-toggle>☰</button>
             <nav class="breadcrumbs" aria-label="Breadcrumb">
-                <a href="dashboard.php" title="Home">Home</a>
+                <a href="<?= htmlspecialchars($homeHref) ?>" title="Home">Home</a>
                 <?php foreach ($breadcrumbs as $crumb): ?>
                     <span class="crumb-sep">/</span>
                     <?php if (!empty($crumb['href'])): ?>

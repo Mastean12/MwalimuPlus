@@ -7,15 +7,36 @@ CREATE DATABASE IF NOT EXISTS mwalimu_plus
 
 USE mwalimu_plus;
 
--- Teachers (auth is included in this build)
+-- Teachers (auth is included in this build). role='superadmin' has control
+-- over every account, the curriculum catalogue, and global settings.
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(190) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  role ENUM('teacher','superadmin') NOT NULL DEFAULT 'teacher',
+  status ENUM('pending','active','suspended') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- The dedicated superadmin login (admin@mwalimuplus.com) is seeded by
+-- database/schema.php's ensure_schema(), not by this file, since it needs
+-- password_hash() at insert time.
+
+-- Records privileged actions (login, account create/approve/suspend/delete,
+-- role changes) for the Security -> Audit logs panel in the superadmin app.
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NULL,
+  action VARCHAR(60) NOT NULL,
+  target_type VARCHAR(40) NOT NULL DEFAULT '',
+  target_id INT UNSIGNED NULL,
+  meta JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_audit_user (user_id),
+  KEY idx_audit_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- KICD curriculum catalogue (demo corpus)

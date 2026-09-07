@@ -65,9 +65,60 @@ function ensure_schema(PDO $pdo): void
             name VARCHAR(100) NOT NULL,
             email VARCHAR(190) NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
+            role ENUM('teacher','superadmin') NOT NULL DEFAULT 'teacher',
+            status ENUM('pending','active','suspended') NOT NULL DEFAULT 'active',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY uq_users_email (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    // users.role: teacher (default) or superadmin. Added after the initial
+    // users table shipped.
+    if (!column_exists($pdo, 'users', 'role')) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN role ENUM('teacher','superadmin') NOT NULL DEFAULT 'teacher' AFTER password_hash");
+    }
+
+    // users.status: 'pending' teachers (self-registered via register.php)
+    // can't log in until a superadmin approves them; 'suspended' blocks an
+    // existing account without deleting it.
+    if (!column_exists($pdo, 'users', 'status')) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN status ENUM('pending','active','suspended') NOT NULL DEFAULT 'active' AFTER role");
+    }
+
+    // The superadmin account is a dedicated login, deliberately kept out of
+    // the teacher pool — it is seeded here, not promoted from any teacher
+    // account, and no app flow (including the old auto-promote-first-user
+    // migration this replaces) is allowed to grant the role to anyone else.
+    $superadminEmail = 'admin@mwalimuplus.com';
+    $superadminRow = $pdo->prepare('SELECT id, role FROM users WHERE email = ?');
+    $superadminRow->execute([$superadminEmail]);
+    $superadmin = $superadminRow->fetch();
+    if ($superadmin === false) {
+        $pdo->prepare(
+            "INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, 'superadmin', 'active')"
+        )->execute(['Super Admin', $superadminEmail, password_hash('Admin@2026', PASSWORD_DEFAULT)]);
+    } elseif ($superadmin['role'] !== 'superadmin') {
+        $pdo->prepare("UPDATE users SET role = 'superadmin' WHERE id = ?")->execute([(int) $superadmin['id']]);
+    }
+    // Undo any earlier accidental promotion (e.g. a teacher account promoted
+    // by a previous version of this migration) — only the dedicated login
+    // above may hold the superadmin role.
+    $pdo->prepare("UPDATE users SET role = 'teacher' WHERE role = 'superadmin' AND email <> ?")
+        ->execute([$superadminEmail]);
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS audit_logs (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id INT UNSIGNED NULL,
+            action VARCHAR(60) NOT NULL,
+            target_type VARCHAR(40) NOT NULL DEFAULT '',
+            target_id INT UNSIGNED NULL,
+            meta JSON NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_audit_user (user_id),
+            KEY idx_audit_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 

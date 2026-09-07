@@ -47,12 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $pdo = db();
-        $stmt = $pdo->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
-        $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
+        // The first account created belongs to the school and is the superadmin.
+        $stmt = $pdo->prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), 'superadmin']);
 
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $pdo->lastInsertId();
         $_SESSION['user_name'] = $name;
+        $_SESSION['user_role'] = 'superadmin';
 
         header('Location: dashboard.php');
         exit;

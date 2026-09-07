@@ -70,6 +70,70 @@ function take_flash(): ?array
     return $flash;
 }
 
+/** True when a superadmin has switched Settings > System maintenance on. */
+function maintenance_mode_enabled(): bool
+{
+    return get_setting('maintenance_mode', '0') === '1';
+}
+
+/**
+ * Blocks the current request with a 503 maintenance page unless the
+ * logged-in user is a superadmin. Call after confirming $_SESSION['user_id']
+ * is set — a superadmin's own session keeps working normally so they can
+ * turn maintenance mode back off.
+ */
+function enforce_not_in_maintenance(): void
+{
+    if (!maintenance_mode_enabled() || ($_SESSION['user_role'] ?? '') === 'superadmin') {
+        return;
+    }
+    render_maintenance_page();
+    exit;
+}
+
+/** Renders the branded "under maintenance" page and stops the script. */
+function render_maintenance_page(): void
+{
+    http_response_code(503);
+    header('Retry-After: 3600');
+    ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Under maintenance · MwalimuPlus</title>
+    <link rel="stylesheet" href="assets/css/app.css">
+    <meta name="theme-color" content="#1f6f43">
+</head>
+<body class="auth-body">
+<div class="auth-shell auth-shell-single">
+    <main class="auth-form-panel">
+        <a class="brand auth-brand" href="login.php">
+            <span class="brand-mark" aria-hidden="true">M+</span>
+            <span class="brand-name">Mwalimu<span>Plus</span></span>
+        </a>
+        <h1>Down for maintenance</h1>
+        <p class="auth-sub">MwalimuPlus is temporarily unavailable. Please check back shortly.</p>
+    </main>
+</div>
+</body>
+</html>
+    <?php
+}
+
+/**
+ * Records a privileged action for the superadmin Security -> Audit logs
+ * panel. $userId is the actor (null for an anonymous/failed login attempt).
+ */
+function audit_log(?int $userId, string $action, string $targetType = '', ?int $targetId = null, array $meta = []): void
+{
+    $stmt = db()->prepare(
+        'INSERT INTO audit_logs (user_id, action, target_type, target_id, meta) VALUES (?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([$userId, $action, $targetType, $targetId, $meta !== [] ? json_encode($meta) : null]);
+}
+
 /** Renders a one-shot flash message if one is pending. */
 function render_flash(): void
 {

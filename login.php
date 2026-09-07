@@ -42,20 +42,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Your session expired. Please try again.';
     } else {
         try {
-            $stmt = db()->prepare('SELECT id, name, password_hash FROM users WHERE email = ?');
+            $stmt = db()->prepare('SELECT id, name, password_hash, role, status FROM users WHERE email = ?');
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password_hash'])) {
-                session_regenerate_id(true);
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // rotate after login
-                $_SESSION['user_id'] = (int) $user['id'];
-                $_SESSION['user_name'] = $user['name'];
-                header('Location: dashboard.php');
-                exit;
+                if ($user['role'] !== 'superadmin' && maintenance_mode_enabled()) {
+                    $error = 'MwalimuPlus is down for maintenance right now. Please check back shortly.';
+                } elseif ($user['status'] === 'pending') {
+                    $error = 'Your account is awaiting approval from a super admin.';
+                } elseif ($user['status'] === 'suspended') {
+                    $error = 'Your account has been suspended. Contact a super admin.';
+                } else {
+                    session_regenerate_id(true);
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // rotate after login
+                    $_SESSION['user_id'] = (int) $user['id'];
+                    $_SESSION['user_name'] = $user['name'];
+                    $_SESSION['user_role'] = $user['role'];
+                    audit_log((int) $user['id'], 'login_success');
+                    header('Location: ' . ($user['role'] === 'superadmin' ? 'superadmin.php' : 'dashboard.php'));
+                    exit;
+                }
+            } else {
+                $error = 'The email or password does not match.';
+                if ($user) {
+                    audit_log((int) $user['id'], 'login_failed');
+                }
             }
-
-            $error = 'The email or password does not match.';
         } catch (PDOException $e) {
             $error = 'Could not sign in right now. Please try again.';
         }
@@ -100,6 +113,10 @@ $pageTitle = 'Sign in';
         <h1>Sign in</h1>
         <p class="auth-sub">Welcome back. Pick up where you left off.</p>
 
+        <?php if (maintenance_mode_enabled()): ?>
+            <div class="alert alert-error" role="status">MwalimuPlus is down for maintenance for teachers right now. Please check back shortly.</div>
+        <?php endif; ?>
+
         <?php if ($error !== ''): ?>
             <div class="alert alert-error" role="alert"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
@@ -123,6 +140,7 @@ $pageTitle = 'Sign in';
             <button type="submit" class="btn btn-primary btn-block">Sign in</button>
         </form>
 
+        <p class="auth-switch"><a href="register.php">New teacher? Request an account</a></p>
         <p class="auth-switch"><a href="browse.php">Browse public lessons without signing in</a></p>
     </main>
 

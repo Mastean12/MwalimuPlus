@@ -17,20 +17,15 @@
 
 declare(strict_types=1);
 
+define('SUPERADMIN_GUARD_JSON', true);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/helpers.php';
-secure_session_start();
+require_once __DIR__ . '/../includes/require-superadmin.php';
 
 const CURRICULUM_UPLOAD_DIR = __DIR__ . '/../uploads/curriculum';
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
 header('Content-Type: application/json; charset=utf-8');
-
-if (empty($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Not signed in.']);
-    exit;
-}
 
 // PHP silently drops the whole body (and $_POST/$_FILES) when the request
 // exceeds post_max_size — the usual cause of an "empty" upload POST.

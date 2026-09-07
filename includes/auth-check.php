@@ -17,8 +17,22 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+enforce_not_in_maintenance();
+
 /** Convenience accessor for the logged-in teacher's name. */
 function current_user_name(): string
 {
     return $_SESSION['user_name'] ?? 'Teacher';
+}
+
+/** Role of the logged-in account, cached in the session since login.php. */
+function current_user_role(): string
+{
+    return $_SESSION['user_role'] ?? 'teacher';
+}
+
+/** True when the logged-in account is a superadmin (session-cached; fast, non-authoritative). */
+function is_superadmin(): bool
+{
+    return current_user_role() === 'superadmin';
 }

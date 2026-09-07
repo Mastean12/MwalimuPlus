@@ -5,15 +5,20 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/auth-check.php';
+require_once __DIR__ . '/includes/require-superadmin.php';
 require_once __DIR__ . '/config/ai.php';
 
-$pageTitle = 'Settings';
-$activeNav = 'settings';
+$pageTitle = 'Platform settings';
+$activeNav = 'admin-settings';
 $showHeader = true;
+$adminShell = true;
 $pageIcon = '⚙️';
-$pageHeading = 'Settings';
+$pageHeading = 'Platform settings';
 $pageSubtitle = 'Configure global application settings like logo, favicon, layout and AI providers.';
+$breadcrumbs = [
+    ['label' => 'Super Admin', 'href' => 'superadmin.php'],
+    ['label' => 'Platform settings'],
+];
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -31,6 +36,7 @@ require __DIR__ . '/includes/header.php';
     <button type="button" class="settings-tab active" data-target="panel-branding">Branding</button>
     <button type="button" class="settings-tab" data-target="panel-theme">Theme Layout</button>
     <button type="button" class="settings-tab" data-target="panel-ai">AI</button>
+    <button type="button" class="settings-tab" data-target="panel-system">System</button>
 </div>
 
 <div id="panel-branding" class="settings-panel active">
@@ -193,7 +199,7 @@ $aiFallbackModelSelected = ai_selected_model('ai_fallback_model', $aiFallbackPro
 <div id="panel-ai" class="settings-panel">
 <section class="panel">
     <h2>AI Providers</h2>
-    <p class="muted">Choose which AI provider and model the app uses by default, plus a fallback provider (and model) it automatically switches to if the default fails or times out. API keys are read from the server's <code>.env</code> file — they are never stored in the database or shown here.</p>
+    <p class="muted">Paste each provider's API key below — it's encrypted before being saved and is never shown again once stored. A saved key always takes priority over the same provider's key in the server's <code>.env</code> file. Choose which provider and model the app uses by default below, plus a fallback it automatically switches to if the default fails or times out.</p>
 
     <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 2rem;">
         <?php foreach ($aiAllProviders as $id => $meta): ?>
@@ -236,6 +242,25 @@ $aiFallbackModelSelected = ai_selected_model('ai_fallback_model', $aiFallbackPro
                 <?php if ($isConfigured && $isDefault): ?>
                     <span style="align-self: flex-start; font-size: .72rem; font-weight: 700; padding: .25rem .6rem; border-radius: 999px; color: var(--green-700, #166534); background: var(--green-100, #dcfce7);">Default</span>
                 <?php endif; ?>
+
+                <?php $hasDbKey = ai_provider_key_in_db($id); $hasEnvKey = trim((string) getenv($meta['env'])) !== ''; ?>
+                <div style="margin-top: .5rem; padding-top: .75rem; border-top: 1px solid var(--line);">
+                    <label style="display: block; font-weight: 600; font-size: .75rem; color: var(--muted); margin-bottom: .35rem; text-transform: uppercase; letter-spacing: .05em;">API key</label>
+                    <div style="display: flex; gap: .4rem;">
+                        <input type="password" class="ai-key-input" data-provider="<?= htmlspecialchars($id) ?>" placeholder="<?= $hasDbKey ? 'Saved — enter a new key to replace' : 'Paste API key' ?>" autocomplete="off" style="flex:1; min-width: 0;">
+                        <button type="button" class="btn btn-small btn-outline ai-key-save" data-provider="<?= htmlspecialchars($id) ?>">Save</button>
+                    </div>
+                    <?php if ($hasDbKey): ?>
+                        <p class="muted" style="margin: .5rem 0 0; font-size: .78rem;">
+                            Encrypted key saved in the database.
+                            <button type="button" class="ai-key-clear" data-provider="<?= htmlspecialchars($id) ?>" style="background:none; border:none; padding:0; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: inherit;">Clear it</button>
+                        </p>
+                    <?php elseif ($hasEnvKey): ?>
+                        <p class="muted" style="margin: .5rem 0 0; font-size: .78rem;">Using the key from <code>.env</code> (<code><?= htmlspecialchars($meta['env']) ?></code>). Save one above to move it into the database instead.</p>
+                    <?php else: ?>
+                        <p class="muted" style="margin: .5rem 0 0; font-size: .78rem;">No key set yet.</p>
+                    <?php endif; ?>
+                </div>
             </div>
         <?php endforeach; ?>
     </div>
@@ -298,10 +323,34 @@ $aiFallbackModelSelected = ai_selected_model('ai_fallback_model', $aiFallbackPro
     <div style="margin-top: 2rem; padding: 1.25rem 1.5rem; border: 1px dashed var(--line-strong, var(--line)); border-radius: var(--radius);">
         <h3 style="margin-top: 0;">No AI providers configured</h3>
         <p class="muted" style="margin: 0 0 .75rem;">AI features are turned off until at least one provider key is added.</p>
-        <p style="margin: 0; font-size: .9rem;">Edit the server's <code>.env</code> file and add any of:<br>
+        <p style="margin: 0; font-size: .9rem;">Paste a key into one of the provider cards above, or edit the server's <code>.env</code> file and add any of:<br>
             <code>CLAUDE_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>DEEPSEEK_API_KEY</code></p>
     </div>
     <?php endif; ?>
+</section>
+</div>
+
+<?php $maintenanceEnabled = maintenance_mode_enabled(); ?>
+<div id="panel-system" class="settings-panel">
+<section class="panel">
+    <h2>System maintenance</h2>
+    <p class="muted">Take the app offline for teachers while you make changes — the public browse pages and every teacher account get a "down for maintenance" page. Super admins keep full access throughout, so you can always turn it back off.</p>
+
+    <div class="card" style="max-width: 520px; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;">
+        <div>
+            <h3 style="margin: 0;">Maintenance mode</h3>
+            <p class="muted" id="maintenance-status" style="margin: .35rem 0 0; font-size: .85rem;">
+                <?= $maintenanceEnabled
+                    ? '<span style="color: var(--danger); font-weight: 700;">● ON</span> — teachers and public pages are locked out.'
+                    : '<span style="color: var(--green-700, #166534); font-weight: 700;">● OFF</span> — the app is live for everyone.' ?>
+            </p>
+        </div>
+        <button type="button" id="maintenance-toggle-btn"
+                class="btn <?= $maintenanceEnabled ? 'btn-danger-ghost' : 'btn-primary' ?>"
+                data-enabled="<?= $maintenanceEnabled ? '1' : '0' ?>">
+            <?= $maintenanceEnabled ? 'Turn off' : 'Turn on' ?>
+        </button>
+    </div>
 </section>
 </div>
 

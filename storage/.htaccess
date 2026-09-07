@@ -1,0 +1,7 @@
+# Block direct web access to the generated encryption key (config/secret.php)
+Require all denied
+
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

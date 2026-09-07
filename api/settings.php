@@ -4,8 +4,9 @@
  */
 declare(strict_types=1);
 
+define('SUPERADMIN_GUARD_JSON', true);
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth-check.php';
+require_once __DIR__ . '/../includes/require-superadmin.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -85,6 +86,65 @@ if (!empty($input['action']) && $input['action'] === 'save_ai') {
     $stmt->execute(['ai_default_model', $defaultModel, $defaultModel]);
     $stmt->execute(['ai_fallback_provider', $fallback, $fallback]);
     $stmt->execute(['ai_fallback_model', $fallbackModel, $fallbackModel]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// Maintenance mode toggle: blocks every teacher (session or public browse
+// pages) behind a 503 page while the superadmin keeps full access.
+if (!empty($input['action']) && $input['action'] === 'toggle_maintenance') {
+    $enabled = !empty($input['enabled']);
+    $value = $enabled ? '1' : '0';
+
+    $pdo = db();
+    $stmt = $pdo->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?');
+    $stmt->execute(['maintenance_mode', $value, $value]);
+
+    audit_log((int) $_SESSION['user_id'], $enabled ? 'maintenance_enabled' : 'maintenance_disabled');
+    echo json_encode(['success' => true, 'enabled' => $enabled]);
+    exit;
+}
+
+// Save (encrypted) or clear a provider's API key, replacing the .env workflow.
+if (!empty($input['action']) && $input['action'] === 'save_ai_key') {
+    require_once __DIR__ . '/../config/ai.php';
+
+    $provider = (string) ($input['provider'] ?? '');
+    $apiKey = trim((string) ($input['api_key'] ?? ''));
+
+    if (ai_provider_meta($provider) === null) {
+        http_response_code(400);
+        exit(json_encode(['error' => 'Unknown provider.']));
+    }
+    if ($apiKey === '' || strlen($apiKey) > 500) {
+        http_response_code(422);
+        exit(json_encode(['error' => 'Enter a valid API key (up to 500 characters).']));
+    }
+
+    $pdo = db();
+    $encrypted = encrypt_secret($apiKey);
+    $stmt = $pdo->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?');
+    $key = 'ai_secret_' . $provider;
+    $stmt->execute([$key, $encrypted, $encrypted]);
+
+    audit_log((int) $_SESSION['user_id'], 'ai_key_saved', 'setting', null, ['provider' => $provider]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if (!empty($input['action']) && $input['action'] === 'clear_ai_key') {
+    require_once __DIR__ . '/../config/ai.php';
+
+    $provider = (string) ($input['provider'] ?? '');
+    if (ai_provider_meta($provider) === null) {
+        http_response_code(400);
+        exit(json_encode(['error' => 'Unknown provider.']));
+    }
+
+    $pdo = db();
+    $pdo->prepare('DELETE FROM settings WHERE setting_key = ?')->execute(['ai_secret_' . $provider]);
+
+    audit_log((int) $_SESSION['user_id'], 'ai_key_cleared', 'setting', null, ['provider' => $provider]);
     echo json_encode(['success' => true]);
     exit;
 }

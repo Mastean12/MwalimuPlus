@@ -450,4 +450,99 @@
         });
     }
 
+    // --- System maintenance mode ---
+    var maintenanceBtn = document.getElementById('maintenance-toggle-btn');
+    if (maintenanceBtn) {
+        maintenanceBtn.addEventListener('click', function () {
+            var turningOn = maintenanceBtn.getAttribute('data-enabled') !== '1';
+            var confirmMsg = turningOn
+                ? 'Turn maintenance mode ON? Teachers and public pages will be locked out until you turn it off again.'
+                : 'Turn maintenance mode OFF? The app becomes live for everyone again.';
+            if (!confirm(confirmMsg)) return;
+
+            maintenanceBtn.disabled = true;
+            fetch('api/settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'toggle_maintenance', enabled: turningOn })
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to update maintenance mode.');
+                    maintenanceBtn.disabled = false;
+                }
+            })
+            .catch(function () {
+                alert('Network error.');
+                maintenanceBtn.disabled = false;
+            });
+        });
+    }
+
+    // --- AI provider API keys (encrypted server-side) ---
+    document.querySelectorAll('.ai-key-save').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var provider = btn.getAttribute('data-provider');
+            var input = document.querySelector('.ai-key-input[data-provider="' + provider + '"]');
+            var apiKey = input ? input.value.trim() : '';
+            if (!apiKey) {
+                alert('Paste an API key first.');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            fetch('api/settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'save_ai_key', provider: provider, api_key: apiKey })
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to save the key.');
+                    btn.disabled = false;
+                    btn.textContent = 'Save';
+                }
+            })
+            .catch(function () {
+                alert('Network error.');
+                btn.disabled = false;
+                btn.textContent = 'Save';
+            });
+        });
+    });
+
+    document.querySelectorAll('.ai-key-clear').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var provider = btn.getAttribute('data-provider');
+            if (!confirm('Remove the saved key for this provider? It falls back to the .env value, if any.')) {
+                return;
+            }
+            btn.disabled = true;
+            fetch('api/settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'clear_ai_key', provider: provider })
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to clear the key.');
+                    btn.disabled = false;
+                }
+            })
+            .catch(function () {
+                alert('Network error.');
+                btn.disabled = false;
+            });
+        });
+    });
+
 })();

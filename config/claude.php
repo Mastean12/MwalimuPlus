@@ -10,6 +10,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/secret.php';
+
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 
 /**
@@ -28,9 +31,20 @@ const CLAUDE_MAX_TOKENS = 8000;
 /** cURL timeout. A grounded lesson call runs ~15-30s; give it headroom. */
 const CLAUDE_TIMEOUT_SECONDS = 120;
 
-/** Placeholder only — replace with your real key or set CLAUDE_API_KEY in the environment. */
+/**
+ * Resolves the Claude API key: a key saved via Settings > AI (encrypted in
+ * the settings table) wins over CLAUDE_API_KEY in the environment.
+ */
 function claude_api_key(): string
 {
+    $stored = (string) get_setting('ai_secret_claude', '');
+    if ($stored !== '') {
+        $decrypted = decrypt_secret($stored);
+        if ($decrypted !== null && trim($decrypted) !== '') {
+            return trim($decrypted);
+        }
+    }
+
     $key = getenv('CLAUDE_API_KEY');
     if ($key === false || $key === '') {
         return 'YOUR_CLAUDE_API_KEY';

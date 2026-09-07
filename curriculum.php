@@ -4,21 +4,23 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/auth-check.php';
+require_once __DIR__ . '/includes/require-superadmin.php';
 
 $pdo = db();
 $subjects = $pdo->query('SELECT id, code, name FROM subjects ORDER BY name')->fetchAll();
 $csrf = csrf_token();
 
 $pageTitle    = 'Curriculum admin';
-$activeNav    = 'subjects';
+$activeNav    = 'admin-curriculum';
 $showHeader   = true;
+$adminShell   = true;
 $pageIcon     = '🛠️';
 $pageHeading  = 'Curriculum admin';
 $pageSubtitle = 'Add a subject or topic that is not in the seeded KICD catalogue.';
 $breadcrumbs  = [
-    ['label' => 'Subjects', 'href' => 'subjects.php'],
-    ['label' => 'Curriculum admin'],
+    ['label' => 'Super Admin', 'href' => 'superadmin.php'],
+    ['label' => 'Curriculum management', 'href' => 'superadmin-curriculum.php'],
+    ['label' => 'Add subject / topic'],
 ];
 require __DIR__ . '/includes/header.php';
 ?>
