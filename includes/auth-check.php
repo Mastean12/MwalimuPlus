@@ -18,6 +18,7 @@ if (empty($_SESSION['user_id'])) {
 }
 
 enforce_not_in_maintenance();
+enforce_session_timeout();
 
 /** Convenience accessor for the logged-in teacher's name. */
 function current_user_name(): string

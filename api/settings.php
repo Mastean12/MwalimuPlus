@@ -105,6 +105,23 @@ if (!empty($input['action']) && $input['action'] === 'toggle_maintenance') {
     exit;
 }
 
+// Idle session timeout (minutes); 0 disables it.
+if (!empty($input['action']) && $input['action'] === 'save_session_timeout') {
+    if (!isset($input['minutes']) || !is_numeric($input['minutes'])) {
+        http_response_code(422);
+        exit(json_encode(['error' => 'Enter a whole number of minutes.']));
+    }
+    $minutes = max(0, min(1440, (int) $input['minutes']));
+
+    $pdo = db();
+    $stmt = $pdo->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?');
+    $stmt->execute(['session_timeout_minutes', (string) $minutes, (string) $minutes]);
+
+    audit_log((int) $_SESSION['user_id'], 'session_timeout_updated', '', null, ['minutes' => $minutes]);
+    echo json_encode(['success' => true, 'minutes' => $minutes]);
+    exit;
+}
+
 // Save (encrypted) or clear a provider's API key, replacing the .env workflow.
 if (!empty($input['action']) && $input['action'] === 'save_ai_key') {
     require_once __DIR__ . '/../config/ai.php';

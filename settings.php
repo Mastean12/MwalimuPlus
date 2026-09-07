@@ -352,6 +352,28 @@ $aiFallbackModelSelected = ai_selected_model('ai_fallback_model', $aiFallbackPro
         </button>
     </div>
 </section>
+
+<?php $sessionTimeoutMinutes = session_timeout_minutes(); ?>
+<section class="panel">
+    <h2>Session timeout</h2>
+    <p class="muted">Automatically sign everyone out — teachers and super admins alike — after this many minutes without activity. Set to 0 to never time out.</p>
+
+    <div class="card" style="max-width: 520px; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;">
+        <div>
+            <h3 style="margin: 0;">Idle timeout</h3>
+            <p class="muted" style="margin: .35rem 0 0; font-size: .85rem;">
+                <?= $sessionTimeoutMinutes > 0
+                    ? 'Currently <strong>' . $sessionTimeoutMinutes . ' minute' . ($sessionTimeoutMinutes === 1 ? '' : 's') . '</strong> of inactivity.'
+                    : 'Currently <strong>disabled</strong> — sessions never expire from inactivity.' ?>
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: .5rem;">
+            <input type="number" id="session-timeout-input" min="0" max="1440" step="1" value="<?= $sessionTimeoutMinutes ?>" style="width: 90px;">
+            <span class="muted" style="font-size: .85rem;">minutes</span>
+            <button type="button" id="session-timeout-save-btn" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</section>
 </div>
 
 <!-- Cropper Modal -->

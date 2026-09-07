@@ -122,6 +122,32 @@ function render_maintenance_page(): void
     <?php
 }
 
+/** Idle session timeout in minutes, set in Settings > System. 0 = never (default). */
+function session_timeout_minutes(): int
+{
+    return max(0, (int) get_setting('session_timeout_minutes', '0'));
+}
+
+/**
+ * Logs an idle session out once it exceeds the configured timeout, then
+ * stamps the current request's time so an active session never expires
+ * mid-use. Call only after confirming $_SESSION['user_id'] is set. A
+ * timeout of 0 (the default) disables this entirely.
+ */
+function enforce_session_timeout(): void
+{
+    $minutes = session_timeout_minutes();
+    if ($minutes > 0 && !empty($_SESSION['last_activity']) && (time() - (int) $_SESSION['last_activity']) > $minutes * 60) {
+        audit_log((int) $_SESSION['user_id'], 'session_timed_out');
+        $_SESSION = [];
+        session_regenerate_id(true);
+        set_flash('info', 'You were signed out after being inactive for a while. Please sign in again.');
+        header('Location: login.php');
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+}
+
 /**
  * Records a privileged action for the superadmin Security -> Audit logs
  * panel. $userId is the actor (null for an anonymous/failed login attempt).

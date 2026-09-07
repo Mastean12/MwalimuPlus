@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = (int) $user['id'];
                     $_SESSION['user_name'] = $user['name'];
                     $_SESSION['user_role'] = $user['role'];
+                    $_SESSION['last_activity'] = time();
                     audit_log((int) $user['id'], 'login_success');
                     header('Location: ' . ($user['role'] === 'superadmin' ? 'superadmin.php' : 'dashboard.php'));
                     exit;
@@ -116,6 +117,8 @@ $pageTitle = 'Sign in';
         <?php if (maintenance_mode_enabled()): ?>
             <div class="alert alert-error" role="status">MwalimuPlus is down for maintenance for teachers right now. Please check back shortly.</div>
         <?php endif; ?>
+
+        <?php render_flash(); ?>
 
         <?php if ($error !== ''): ?>
             <div class="alert alert-error" role="alert"><?= htmlspecialchars($error) ?></div>

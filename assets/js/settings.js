@@ -482,6 +482,41 @@
         });
     }
 
+    // --- Session idle timeout ---
+    var sessionTimeoutBtn = document.getElementById('session-timeout-save-btn');
+    var sessionTimeoutInput = document.getElementById('session-timeout-input');
+    if (sessionTimeoutBtn && sessionTimeoutInput) {
+        sessionTimeoutBtn.addEventListener('click', function () {
+            var minutes = parseInt(sessionTimeoutInput.value, 10);
+            if (isNaN(minutes) || minutes < 0) {
+                alert('Enter 0 or a positive number of minutes.');
+                return;
+            }
+            sessionTimeoutBtn.disabled = true;
+            sessionTimeoutBtn.textContent = 'Saving...';
+            fetch('api/settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'save_session_timeout', minutes: minutes })
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to save the timeout.');
+                    sessionTimeoutBtn.disabled = false;
+                    sessionTimeoutBtn.textContent = 'Save';
+                }
+            })
+            .catch(function () {
+                alert('Network error.');
+                sessionTimeoutBtn.disabled = false;
+                sessionTimeoutBtn.textContent = 'Save';
+            });
+        });
+    }
+
     // --- AI provider API keys (encrypted server-side) ---
     document.querySelectorAll('.ai-key-save').forEach(function (btn) {
         btn.addEventListener('click', function () {
